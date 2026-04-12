@@ -5,7 +5,8 @@ body {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-/* TOPBAR */
+/* ================= TOPBAR ================= */
+
 #topbar {
   position: sticky;
   top: 0;
@@ -15,9 +16,10 @@ body {
   border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 
-/* GRID — ВОТ ТУТ ГЛАВНОЕ */
+/* ================= GRID ================= */
+
 #grid {
-  display: grid !important;
+  display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
 
@@ -26,7 +28,8 @@ body {
   margin: 0 auto;
 }
 
-/* CARD */
+/* ================= CARD ================= */
+
 .card {
   background: #15161a;
   border: 1px solid #23252b;
@@ -35,36 +38,21 @@ body {
   padding: 10px;
 
   display: block;
+  height: auto;
+  overflow: visible;
 
-  height: auto;      /* ВАЖНО */
-  overflow: visible;  /* ВАЖНО */
+  position: relative;
 }
 
-/* ОБЛАСТЬ КАРТИНКИ = 1/4 карточки */
-.card img {
-  display: inline-block;
+/* ================= IMAGE (главный фикс) ================= */
 
-  width: auto;        /* ключ */
-  max-width: 100%;    /* не вылезает за карточку */
-
-  height: 90px;       /* фиксируем "мини-блок" */
-  object-fit: contain;
-
-  border-radius: 10px;
-
-  background: #0f1013;
-
-  margin-bottom: 8px;
-}
-/* TEXT */
 .card img {
   float: left;
 
-  width: 90px;
-  height: 90px;
+  width: 80px;
+  height: 80px;
 
   object-fit: contain;
-  object-position: center;
 
   border-radius: 10px;
 
@@ -73,12 +61,47 @@ body {
   margin: 0 10px 6px 0;
 }
 
+/* ================= TEXTAREA ================= */
+
+.card textarea {
+  width: auto;
+  min-height: 60px;
+
+  background: transparent;
+  border: none;
+  outline: none;
+
+  color: #d6d6d6;
+  caret-color: #fff;
+
+  font-size: 14px;
+  line-height: 1.5;
+
+  resize: none;
+  overflow: hidden;
+
+  display: block;
+
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ================= CLEAR FLOAT ================= */
+
+.card::after {
+  content: "";
+  display: block;
+  clear: both;
+}
+
+/* ================= BUTTON ================= */
+
 #addBtn {
-  background: #15161a;        /* как card */
+  background: #15161a;
   color: #cfcfcf;
 
-  border: 1px solid #23252b;  /* как card border */
-  border-radius: 14px;        /* те же скругления */
+  border: 1px solid #23252b;
+  border-radius: 14px;
 
   padding: 8px 12px;
 
@@ -86,24 +109,15 @@ body {
   font-size: 14px;
 
   cursor: pointer;
-
-  transition: none; /* убираем дергания */
 }
 
-/* hover — только цвет рамки */
 #addBtn:hover {
   border-color: #9b5cff;
   color: #9b5cff;
 }
 
-/* CLEAR FLOAT */
-.card::after {
-  content: "";
-  display: block;
-  clear: both;
-}
+/* ================= RESPONSIVE ================= */
 
-/* RESPONSIVE */
 @media (max-width: 1100px) {
   #grid { grid-template-columns: repeat(3, 1fr); }
 }
