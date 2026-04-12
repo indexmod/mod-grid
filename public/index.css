@@ -33,44 +33,44 @@ body {
   border-radius: 14px;
 
   padding: 10px;
+
   display: block;
+
+  height: auto;      /* ВАЖНО */
+  overflow: visible;  /* ВАЖНО */
 }
 
 /* ОБЛАСТЬ КАРТИНКИ = 1/4 карточки */
 .card img {
-  width: 100%;
-  max-height: 90px;     /* ограничение высоты */
-  height: 90px;         /* фикс зона миниатюры */
+  display: inline-block;
 
-  object-fit: contain;  /* без кропа */
-  object-position: left top;
+  width: auto;        /* ключ */
+  max-width: 100%;    /* не вылезает за карточку */
 
-  background: #0f1013;
+  height: 90px;       /* фиксируем "мини-блок" */
+  object-fit: contain;
+
   border-radius: 10px;
 
-  display: block;
+  background: #0f1013;
+
   margin-bottom: 8px;
 }
 /* TEXT */
-textarea {
-  width: 100%;
-  min-height: 60px;
+.card img {
+  float: left;
 
-  background: transparent;
+  width: 90px;
+  height: 90px;
 
-  border: none;
-  outline: none;
+  object-fit: contain;
+  object-position: center;
 
-  color: #d6d6d6; /* ВАЖНО */
-  caret-color: #ffffff;
+  border-radius: 10px;
 
-  font-size: 14px;
-  line-height: 1.5;
+  background: #0f1013;
 
-  resize: none;
-  overflow: hidden;
-
-  display: block;
+  margin: 0 10px 6px 0;
 }
 
 #addBtn {
