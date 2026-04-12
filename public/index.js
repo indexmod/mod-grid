@@ -1,127 +1,115 @@
-const feed = document.getElementById("feed");
+const grid = document.getElementById("grid");
+const addBtn = document.getElementById("addBtn");
 
 let posts = [];
-let saveTimers = {};
 let textareas = {};
+let timers = {};
+
+// ================= AUTO HEIGHT =================
+function autoResize(el) {
+  el.style.height = "auto";
+  el.style.height = el.scrollHeight + "px";
+}
 
 // ================= LOAD =================
 async function load() {
   const res = await fetch("/api/feed");
   const json = await res.json();
 
-  const serverPosts = json.data || [];
-
-  const backup = localStorage.getItem("feed_backup");
-
-  if (backup) {
-    const localPosts = JSON.parse(backup);
-
-    posts = serverPosts.map((p) => {
-      const local = localPosts.find(lp => lp.id === p.id);
-
-      return {
-        ...p,
-        text: local?.text ?? p.text
-      };
-    });
-
-  } else {
-    posts = serverPosts;
-  }
-
+  posts = json.data || [];
   render();
 }
 
 // ================= SYNC =================
 async function sync() {
-  try {
-    const res = await fetch("/api/feed");
-    const json = await res.json();
+  const res = await fetch("/api/feed");
+  const json = await res.json();
 
-    const serverPosts = json.data || [];
+  const server = json.data || [];
 
-    serverPosts.forEach(serverPost => {
-      const local = posts.find(p => p.id === serverPost.id);
-      if (!local) return;
+  server.forEach(sp => {
+    const local = posts.find(p => p.id === sp.id);
+    if (!local) return;
 
-      if (!saveTimers[serverPost.id]) {
-        if (local.text !== serverPost.text) {
-          local.text = serverPost.text;
+    if (!timers[sp.id] && local.text !== sp.text) {
+      local.text = sp.text;
 
-          const textarea = textareas[serverPost.id];
-          if (textarea && textarea.value !== serverPost.text) {
-            textarea.value = serverPost.text;
-          }
-        }
+      const ta = textareas[sp.id];
+      if (ta) {
+        ta.value = sp.text;
+        autoResize(ta);
       }
-    });
+    }
+  });
+}
 
-  } catch (e) {
-    console.error("sync failed", e);
-  }
+// ================= CREATE =================
+async function createPost() {
+  const res = await fetch("/api/paste", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      image: "",
+      text: ""
+    })
+  });
+
+  const json = await res.json();
+  posts.unshift(json.post);
+
+  render();
 }
 
 // ================= RENDER =================
 function render() {
-  feed.innerHTML = "";
+  grid.innerHTML = "";
   textareas = {};
 
-  posts.forEach((item) => {
-
-    const post = document.createElement("div");
-    post.className = "post";
-
-    const imageWrap = document.createElement("div");
-    imageWrap.className = "imageWrap";
+  posts.forEach(post => {
+    const card = document.createElement("div");
+    card.className = "card";
 
     const img = document.createElement("img");
-    img.className = "imageMain";
-    img.src = item.image;
-
-    imageWrap.appendChild(img);
+    img.src = post.image || "";
 
     const text = document.createElement("textarea");
-    text.className = "text";
-    text.value = item.text || "";
+    text.value = post.text || "";
 
-    textareas[item.id] = text;
+    autoResize(text);
+    textareas[post.id] = text;
 
     text.addEventListener("input", (e) => {
       const value = e.target.value;
 
-      const target = posts.find(p => p.id === item.id);
+      autoResize(text);
+
+      const target = posts.find(p => p.id === post.id);
       if (target) target.text = value;
 
-      localStorage.setItem("feed_backup", JSON.stringify(posts));
+      clearTimeout(timers[post.id]);
 
-      clearTimeout(saveTimers[item.id]);
+      timers[post.id] = setTimeout(async () => {
+        await fetch("/api/update", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: post.id,
+            text: value
+          })
+        });
 
-      saveTimers[item.id] = setTimeout(async () => {
-        try {
-          await fetch("/api/update", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              id: item.id,
-              text: value
-            })
-          });
-        } catch (e) {
-          console.error("save failed", e);
-        } finally {
-          delete saveTimers[item.id];
-        }
-      }, 400);
+        delete timers[post.id];
+      }, 300);
     });
 
-    post.appendChild(imageWrap);
-    post.appendChild(text);
-
-    feed.appendChild(post);
+    card.appendChild(img);
+    card.appendChild(text);
+    grid.appendChild(card);
   });
 }
+
+// ================= EVENTS =================
+addBtn.onclick = createPost;
 
 // ================= INIT =================
 load();
