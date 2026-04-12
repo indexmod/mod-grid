@@ -35,16 +35,17 @@ body {
   min-height: 120px;
 }
 
-/* IMAGE */
 .card img {
-  float: left;
-  width: 70px;
-  height: 70px;
-  margin: 0 10px 6px 0;
-  border-radius: 10px;
-  object-fit: cover;
-}
+  width: 100%;
+  height: auto;
 
+  display: block;
+
+  border-radius: 12px;
+
+  object-fit: contain;   /* ключевой фикс */
+  background: #0f1013;   /* плейсхолдер под пустоты */
+}
 /* TEXT */
 textarea {
   width: 100%;
