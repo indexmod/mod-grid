@@ -15,11 +15,19 @@ export default {
     // ======================
     // HELPERS
     // ======================
+    const safeParse = (raw) => {
+      try {
+        const data = raw ? JSON.parse(raw) : [];
+        return Array.isArray(data) ? data : [];
+      } catch {
+        return [];
+      }
+    };
+
     const getFeed = async () => {
       try {
         const raw = await env.GRID.get("feed");
-        const data = raw ? JSON.parse(raw) : [];
-        return Array.isArray(data) ? data : [];
+        return safeParse(raw);
       } catch (e) {
         console.log("GET ERROR:", e);
         return [];
@@ -28,27 +36,27 @@ export default {
 
     const saveFeed = async (feed) => {
       try {
-        await env.GRID.put(
-          "feed",
-          JSON.stringify(feed.slice(0, 200))
-        );
+        const clean = feed
+          .filter(Boolean)
+          .slice(0, 200);
+
+        await env.GRID.put("feed", JSON.stringify(clean));
       } catch (e) {
         console.log("SAVE ERROR:", e);
       }
     };
 
-    const sortByOrder = (feed) =>
-      [...feed].sort((a, b) => {
-        const ao = a.order ?? 0;
-        const bo = b.order ?? 0;
-        return ao - bo;
-      });
-
-    const normalizeOrder = (feed) =>
+    const normalize = (feed) =>
       feed.map((p, i) => ({
-        ...p,
-        order: p.order ?? i
+        id: p.id ?? Date.now() + i,
+        text: p.text ?? "",
+        image: p.image ?? "",
+        link: p.link ?? "",
+        order: Number.isFinite(p.order) ? p.order : i
       }));
+
+    const sortByOrder = (feed) =>
+      [...feed].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
     // ======================
     // FEED
@@ -56,9 +64,11 @@ export default {
     if (url.pathname === "/api/feed") {
       const feed = await getFeed();
 
+      const prepared = sortByOrder(normalize(feed));
+
       return Response.json({
         ok: true,
-        data: sortByOrder(normalizeOrder(feed))
+        data: prepared
       });
     }
 
@@ -66,7 +76,7 @@ export default {
     // CREATE
     // ======================
     if (url.pathname === "/api/paste") {
-      const body = await req.json();
+      const body = await req.json().catch(() => ({}));
       const feed = await getFeed();
 
       const post = {
@@ -76,10 +86,10 @@ export default {
         image: body.image || "",
         link: body.link || "",
 
-        order: 0 // всегда сверху
+        order: 0
       };
 
-      // сдвигаем остальные вниз
+      // shift existing
       const updated = feed.map((p) => ({
         ...p,
         order: (p.order ?? 0) + 1
@@ -89,26 +99,30 @@ export default {
 
       await saveFeed(updated);
 
-      return Response.json({ ok: true, post });
+      return Response.json({
+        ok: true,
+        post
+      });
     }
 
     // ======================
     // UPDATE
     // ======================
     if (url.pathname === "/api/update") {
-      const body = await req.json();
+      const body = await req.json().catch(() => ({}));
       const feed = await getFeed();
 
-      const updated = feed.map((p) =>
-        p.id === body.id
-          ? {
-              ...p,
-              text: body.text ?? p.text,
-              image: body.image ?? p.image,
-              link: body.link ?? p.link
-            }
-          : p
-      );
+      const updated = feed.map((p) => {
+        if (p.id !== body.id) return p;
+
+        return {
+          ...p,
+          text: body.text ?? p.text,
+          image: body.image ?? p.image,
+          link: body.link ?? p.link,
+          order: body.order ?? p.order
+        };
+      });
 
       await saveFeed(updated);
 
@@ -119,7 +133,7 @@ export default {
     // DELETE
     // ======================
     if (url.pathname === "/api/delete") {
-      const body = await req.json();
+      const body = await req.json().catch(() => ({}));
       const feed = await getFeed();
 
       const updated = feed.filter((p) => p.id !== body.id);
@@ -130,11 +144,15 @@ export default {
     }
 
     // ======================
-    // REORDER (drag & drop)
+    // REORDER
     // ======================
     if (url.pathname === "/api/reorder") {
-      const body = await req.json();
+      const body = await req.json().catch(() => []);
       let feed = await getFeed();
+
+      if (!Array.isArray(body)) {
+        return Response.json({ ok: false, error: "bad payload" }, { status: 400 });
+      }
 
       const orderMap = new Map(
         body.map((p) => [p.id, p.order])
@@ -142,7 +160,9 @@ export default {
 
       const updated = feed.map((p) => ({
         ...p,
-        order: orderMap.get(p.id) ?? p.order
+        order: orderMap.has(p.id)
+          ? orderMap.get(p.id)
+          : p.order
       }));
 
       await saveFeed(updated);

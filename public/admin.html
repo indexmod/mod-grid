@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>GRID ADMIN</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='42' fill='%239B5CFF'/%3E%3C/svg%3E">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="/index.css">
+
+<style>
+#grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  padding: 20px;
+}
+
+.deleteBtn {
+  margin-top: 8px;
+  background: #2a1a1a;
+  border: 1px solid #442222;
+  color: #ff6b6b;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.deleteBtn:hover {
+  background: #3a1f1f;
+}
+</style>
+
+</head>
+
+<body>
+
+<div id="topbar">
+  <div>ADMIN MODE</div>
+</div>
+
+<div id="grid"></div>
+
+<script src="/admin.js" defer></script>
+
+</body>
+</html>
