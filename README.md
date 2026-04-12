@@ -1,6 +1,4 @@
-Ок, зафиксируем это как **стабильную версию GRID v1 (working state)** и добавим понятную инструкцию отката.
 
----
 
 # 📘 README — GRID (stable v1 rollback state)
 
