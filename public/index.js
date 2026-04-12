@@ -2,13 +2,11 @@ const grid = document.getElementById("grid");
 const addBtn = document.getElementById("addBtn");
 
 let posts = [];
-let textareas = {};
+let nodes = {};
 let timers = {};
-let isSyncing = false;
 
 // ================= AUTO HEIGHT =================
 function autoResize(el) {
-  if (!el) return;
   el.style.height = "auto";
   el.style.height = el.scrollHeight + "px";
 }
@@ -22,118 +20,139 @@ async function load() {
   render();
 }
 
-// ================= SYNC (diff-safe) =================
-async function sync() {
-  if (isSyncing) return;
+// ================= CREATE NODE =================
+function createCard(post) {
+  const card = document.createElement("div");
+  card.className = "card";
+  card.draggable = true;
 
-  try {
-    isSyncing = true;
+  // IMAGE
+  const img = document.createElement("img");
+  if (post.image) img.src = post.image;
 
-    const res = await fetch("/api/feed");
-    const json = await res.json();
+  // TEXT
+  const ta = document.createElement("textarea");
+  ta.value = post.text || "";
 
-    const server = json.data || [];
+  autoResize(ta);
 
-    server.forEach(sp => {
-      const local = posts.find(p => p.id === sp.id);
-      if (!local) return;
+  ta.addEventListener("input", () => {
+    post.text = ta.value;
+    autoResize(ta);
 
-      if (!timers[sp.id] && local.text !== sp.text) {
-        local.text = sp.text;
+    clearTimeout(timers[post.id]);
+    timers[post.id] = setTimeout(() => {
+      fetch("/api/update", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ id: post.id, text: post.text })
+      });
+    }, 300);
+  });
 
-        const ta = textareas[sp.id];
-        if (ta && document.activeElement !== ta) {
-          ta.value = sp.text;
-          autoResize(ta);
-        }
-      }
-    });
+  // PASTE IMAGE URL
+  ta.addEventListener("paste", (e) => {
+    const text = (e.clipboardData || window.clipboardData).getData("text");
 
-  } catch (e) {
-    console.error("sync error", e);
-  } finally {
-    isSyncing = false;
-  }
+    if (text.startsWith("http") && text.match(/\.(jpg|png|webp|jpeg)/)) {
+      e.preventDefault();
+      post.image = text;
+      img.src = text;
+    }
+  });
+
+  // DRAG
+  card.addEventListener("dragstart", () => {
+    card.classList.add("dragging");
+  });
+
+  card.addEventListener("dragend", () => {
+    card.classList.remove("dragging");
+    saveOrder();
+  });
+
+  card.appendChild(img);
+  card.appendChild(ta);
+
+  return card;
 }
 
-// ================= CREATE =================
-async function createPost() {
+// ================= RENDER (SAFE) =================
+function render() {
+  grid.innerHTML = "";
+  nodes = {};
+
+  posts.forEach(post => {
+    const card = createCard(post);
+    nodes[post.id] = card;
+    grid.appendChild(card);
+  });
+}
+
+// ================= DRAG REORDER =================
+grid.addEventListener("dragover", (e) => {
+  e.preventDefault();
+
+  const after = getAfterElement(grid, e.clientY);
+  const dragging = document.querySelector(".dragging");
+
+  if (!dragging) return;
+
+  if (!after) {
+    grid.appendChild(dragging);
+  } else {
+    grid.insertBefore(dragging, after);
+  }
+});
+
+function getAfterElement(container, y) {
+  const els = [...container.querySelectorAll(".card:not(.dragging)")];
+
+  return els.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+
+    if (offset < 0 && offset > closest.offset) {
+      return { offset, element: child };
+    } else {
+      return closest;
+    }
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+// ================= SAVE ORDER =================
+function saveOrder() {
+  const newOrder = [...grid.children].map((el, index) => {
+    const post = posts.find(p => nodes[p.id] === el);
+    if (post) post.order = index;
+    return post;
+  });
+
+  posts = newOrder;
+
+  fetch("/api/reorder", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(
+      posts.map(p => ({ id: p.id, order: p.order }))
+    )
+  });
+}
+
+// ================= ADD =================
+addBtn.onclick = async () => {
   const res = await fetch("/api/paste", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      image: "",
-      text: ""
-    })
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ text: "", image: "" })
   });
 
   const json = await res.json();
 
   posts.unshift(json.post);
   render();
-}
-
-// ================= UPDATE =================
-async function updatePost(id, patch) {
-  await fetch("/api/update", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      id,
-      ...patch
-    })
-  });
-}
-
-// ================= RENDER =================
-function render() {
-  grid.innerHTML = "";
-  textareas = {};
-
-  posts.forEach(post => {
-    const card = document.createElement("div");
-    card.className = "card";
-
-    // IMAGE
-    if (post.image) {
-      const img = document.createElement("img");
-      img.src = post.image;
-      img.className = "thumb";
-      card.appendChild(img);
-    }
-
-    // TEXT
-    const text = document.createElement("textarea");
-    text.className = "text";
-    text.value = post.text || "";
-
-    autoResize(text);
-    textareas[post.id] = text;
-
-    text.addEventListener("input", (e) => {
-      const value = e.target.value;
-
-      autoResize(text);
-
-      const target = posts.find(p => p.id === post.id);
-      if (target) target.text = value;
-
-      clearTimeout(timers[post.id]);
-
-      timers[post.id] = setTimeout(() => {
-        updatePost(post.id, { text: value });
-        delete timers[post.id];
-      }, 300);
-    });
-
-    card.appendChild(text);
-    grid.appendChild(card);
-  });
-}
-
-// ================= EVENTS =================
-addBtn.onclick = createPost;
+};
 
 // ================= INIT =================
 load();
-setInterval(sync, 2000);
+setInterval(load, 5000);
