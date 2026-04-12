@@ -20,7 +20,61 @@ async function load() {
   render();
 }
 
-// ================= CREATE NODE =================
+// ================= SYNC (без перерендера DOM) =================
+async function sync() {
+  const res = await fetch("/api/feed");
+  const json = await res.json();
+
+  const server = json.data || [];
+
+  server.forEach(sp => {
+    const local = posts.find(p => p.id === sp.id);
+    if (!local) return;
+
+    const card = nodes[sp.id];
+    if (!card) return;
+
+    // TEXT sync
+    if (!timers[sp.id] && local.text !== sp.text) {
+      local.text = sp.text;
+      const ta = card.querySelector("textarea");
+      if (ta) {
+        ta.value = sp.text;
+        autoResize(ta);
+      }
+    }
+
+    // IMAGE sync (ВАЖНО: не затираем пустым значением)
+    if (sp.image && local.image !== sp.image) {
+      local.image = sp.image;
+      const img = card.querySelector("img");
+      if (img) {
+        img.src = sp.image;
+        img.style.display = "block";
+      }
+    }
+  });
+}
+
+// ================= CREATE POST =================
+async function createPost() {
+  const res = await fetch("/api/paste", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      text: "",
+      image: "",
+      link: ""
+    })
+  });
+
+  const json = await res.json();
+
+  posts.unshift(json.post);
+  render();
+}
+
+// ================= CARD =================
 function createCard(post) {
   const card = document.createElement("div");
   card.className = "card";
@@ -28,7 +82,16 @@ function createCard(post) {
 
   // IMAGE
   const img = document.createElement("img");
-  if (post.image) img.src = post.image;
+
+  if (post.image?.trim()) {
+    img.src = post.image;
+  } else {
+    img.removeAttribute("src");
+  }
+
+  img.onerror = () => {
+    img.style.display = "none";
+  };
 
   // TEXT
   const ta = document.createElement("textarea");
@@ -36,28 +99,50 @@ function createCard(post) {
 
   autoResize(ta);
 
+  // TEXT UPDATE
   ta.addEventListener("input", () => {
     post.text = ta.value;
     autoResize(ta);
 
     clearTimeout(timers[post.id]);
-    timers[post.id] = setTimeout(() => {
-      fetch("/api/update", {
+
+    timers[post.id] = setTimeout(async () => {
+      await fetch("/api/update", {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ id: post.id, text: post.text })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: post.id,
+          text: post.text
+        })
       });
+
+      delete timers[post.id];
     }, 300);
   });
 
-  // PASTE IMAGE URL
-  ta.addEventListener("paste", (e) => {
-    const text = (e.clipboardData || window.clipboardData).getData("text");
+  // IMAGE PASTE (фикс: СРАЗУ сохраняем в KV)
+  ta.addEventListener("paste", async (e) => {
+    const text = (e.clipboardData || window.clipboardData)
+      .getData("text");
 
-    if (text.startsWith("http") && text.match(/\.(jpg|png|webp|jpeg)/)) {
+    if (
+      text.startsWith("http") &&
+      text.match(/\.(jpg|jpeg|png|webp)/)
+    ) {
       e.preventDefault();
+
       post.image = text;
       img.src = text;
+      img.style.display = "block";
+
+      await fetch("/api/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: post.id,
+          image: text
+        })
+      });
     }
   });
 
@@ -77,7 +162,7 @@ function createCard(post) {
   return card;
 }
 
-// ================= RENDER (SAFE) =================
+// ================= RENDER =================
 function render() {
   grid.innerHTML = "";
   nodes = {};
@@ -89,7 +174,7 @@ function render() {
   });
 }
 
-// ================= DRAG REORDER =================
+// ================= DRAG SORT =================
 grid.addEventListener("dragover", (e) => {
   e.preventDefault();
 
@@ -122,37 +207,29 @@ function getAfterElement(container, y) {
 
 // ================= SAVE ORDER =================
 function saveOrder() {
-  const newOrder = [...grid.children].map((el, index) => {
+  const ordered = [...grid.children].map((el, index) => {
     const post = posts.find(p => nodes[p.id] === el);
     if (post) post.order = index;
     return post;
   });
 
-  posts = newOrder;
+  posts = ordered;
 
   fetch("/api/reorder", {
     method: "POST",
-    headers: {"Content-Type": "application/json"},
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(
-      posts.map(p => ({ id: p.id, order: p.order }))
+      posts.map(p => ({
+        id: p.id,
+        order: p.order
+      }))
     )
   });
 }
 
-// ================= ADD =================
-addBtn.onclick = async () => {
-  const res = await fetch("/api/paste", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ text: "", image: "" })
-  });
-
-  const json = await res.json();
-
-  posts.unshift(json.post);
-  render();
-};
+// ================= EVENTS =================
+addBtn.onclick = createPost;
 
 // ================= INIT =================
 load();
-setInterval(load, 5000);
+setInterval(sync, 2000);

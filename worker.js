@@ -3,7 +3,7 @@ export default {
     const url = new URL(req.url);
 
     // ======================
-    // KV GUARD
+    // GUARD
     // ======================
     if (!env.GRID) {
       return Response.json(
@@ -19,7 +19,6 @@ export default {
       try {
         const raw = await env.GRID.get("feed");
         const data = raw ? JSON.parse(raw) : [];
-
         return Array.isArray(data) ? data : [];
       } catch (e) {
         console.log("GET ERROR:", e);
@@ -38,26 +37,33 @@ export default {
       }
     };
 
-    const sortFeed = (feed) => {
-      return feed.sort(
-        (a, b) => (a.order ?? 0) - (b.order ?? 0)
-      );
-    };
+    const sortByOrder = (feed) =>
+      [...feed].sort((a, b) => {
+        const ao = a.order ?? 0;
+        const bo = b.order ?? 0;
+        return ao - bo;
+      });
+
+    const normalizeOrder = (feed) =>
+      feed.map((p, i) => ({
+        ...p,
+        order: p.order ?? i
+      }));
 
     // ======================
-    // API: FEED
+    // FEED
     // ======================
     if (url.pathname === "/api/feed") {
       const feed = await getFeed();
 
       return Response.json({
         ok: true,
-        data: sortFeed(feed)
+        data: sortByOrder(normalizeOrder(feed))
       });
     }
 
     // ======================
-    // API: CREATE POST
+    // CREATE
     // ======================
     if (url.pathname === "/api/paste") {
       const body = await req.json();
@@ -70,89 +76,86 @@ export default {
         image: body.image || "",
         link: body.link || "",
 
-        order: feed.length
+        order: 0 // всегда сверху
       };
 
-      feed.unshift(post);
+      // сдвигаем остальные вниз
+      const updated = feed.map((p) => ({
+        ...p,
+        order: (p.order ?? 0) + 1
+      }));
 
-      await saveFeed(feed);
+      updated.unshift(post);
 
-      return Response.json({
-        ok: true,
-        post
-      });
+      await saveFeed(updated);
+
+      return Response.json({ ok: true, post });
     }
 
     // ======================
-    // API: UPDATE POST
+    // UPDATE
     // ======================
     if (url.pathname === "/api/update") {
       const body = await req.json();
-      let feed = await getFeed();
+      const feed = await getFeed();
 
-      feed = feed.map((p) => {
-        if (p.id !== body.id) return p;
+      const updated = feed.map((p) =>
+        p.id === body.id
+          ? {
+              ...p,
+              text: body.text ?? p.text,
+              image: body.image ?? p.image,
+              link: body.link ?? p.link
+            }
+          : p
+      );
 
-        return {
-          ...p,
-          text: body.text ?? p.text,
-          image: body.image ?? p.image,
-          link: body.link ?? p.link,
-          order: body.order ?? p.order
-        };
-      });
-
-      await saveFeed(feed);
+      await saveFeed(updated);
 
       return Response.json({ ok: true });
     }
 
     // ======================
-    // API: DELETE POST
+    // DELETE
     // ======================
     if (url.pathname === "/api/delete") {
       const body = await req.json();
-      let feed = await getFeed();
+      const feed = await getFeed();
 
-      feed = feed.filter((p) => p.id !== body.id);
+      const updated = feed.filter((p) => p.id !== body.id);
 
-      await saveFeed(feed);
+      await saveFeed(updated);
 
       return Response.json({ ok: true });
     }
 
     // ======================
-    // BULK REORDER (drag & drop)
+    // REORDER (drag & drop)
     // ======================
     if (url.pathname === "/api/reorder") {
       const body = await req.json();
-      // body = [{id, order}]
-
       let feed = await getFeed();
 
-      const map = new Map(
+      const orderMap = new Map(
         body.map((p) => [p.id, p.order])
       );
 
-      feed = feed.map((p) => ({
+      const updated = feed.map((p) => ({
         ...p,
-        order: map.get(p.id) ?? p.order
+        order: orderMap.get(p.id) ?? p.order
       }));
 
-      await saveFeed(feed);
+      await saveFeed(updated);
 
       return Response.json({ ok: true });
     }
 
     // ======================
-    // ADMIN ROUTE
+    // ADMIN
     // ======================
     if (url.pathname === "/admin") {
       return env.ASSETS.fetch(
-        new Request(
-          new URL("/admin.html", req.url),
-          req
-        )
+        new Request(new URL("/admin.html", req.url), req)
       );
     }
 
