@@ -1,0 +1,93 @@
+body{
+  margin:0;
+  font-family:"Helvetica Neue", Helvetica, Arial, sans-serif;
+  background:white;
+  color:black;
+  overflow-x:auto;
+  overflow-y:hidden;
+}
+
+/* горизонтальная лента */
+.feed{
+  display:flex;
+  flex-direction:row;
+  gap:20px;
+  padding:20px;
+  width:max-content;
+  height:100vh;
+  box-sizing:border-box;
+  align-items:flex-end;
+}
+
+/* пост = ровно экран */
+.post{
+  width:80vw;
+  height:100%;
+
+  display:flex;
+  flex-direction:column;
+  gap:20px;
+}
+
+/* блок картинок */
+.imageRow{
+  display:flex;
+  gap:20px;
+  height:50%;
+  align-items:flex-end;
+}
+
+/* MAIN контейнер */
+.imageMainWrap{
+  flex:1;
+  height:100%;
+  overflow:hidden;
+}
+
+/* THUMB контейнер */
+.imageThumbWrap{
+  height:50%;     /* 💥 всегда половина main */
+  aspect-ratio:1/1;
+}
+
+/* MAIN картинка */
+.imageMain{
+  width:100%;
+  height:100%;
+
+  object-fit:cover;
+  object-position:top;
+
+  display:block;
+  filter:grayscale(1);
+}
+
+/* THUMB картинка */
+.imageThumb{
+  width:100%;
+  height:100%;
+
+  object-fit:contain;
+  display:block;
+}
+
+/* текст */
+.text{
+  height:50%;
+  width:100%;
+
+  border:none;
+  outline:none;
+  resize:none;
+
+  font-size:25px;
+  font-weight:700;
+  line-height:1.4;
+
+  padding:0;
+  margin:0;
+  text-indent:0;
+
+  box-sizing:border-box;
+  overflow:hidden;
+}

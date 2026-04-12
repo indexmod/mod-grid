@@ -1,0 +1,107 @@
+body {
+	margin: 0;
+	background: #111214;
+	color: #e6e6e6;
+
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+	overflow-x: hidden;
+	overflow-y: auto;
+
+	-webkit-text-size-adjust: 100%;
+	text-size-adjust: 100%;
+}
+
+/* ===== LAYOUT ===== */
+
+.feed {
+	max-width: 520px;
+	margin: 0 auto;
+
+	padding: 40px 20px;
+
+	box-sizing: border-box;
+}
+
+/* ===== POST ===== */
+
+.post {
+	width: 100%;
+	margin-bottom: 40px;
+}
+
+/* ===== IMAGE ===== */
+
+.imageWrap {
+	width: 100%;
+
+	border-radius: 18px;
+	overflow: hidden;
+
+	background: #1a1b1e;
+
+	padding: 5px;
+
+	box-sizing: border-box;
+
+	margin-bottom: 20px;
+}
+
+.imageMain {
+	width: 100%;
+	height: auto;
+
+	display: block;
+
+	border-radius: 12px;
+
+	object-fit: cover;
+}
+
+/* ===== TEXT ===== */
+
+.text {
+	width: 100%;
+
+	min-height: 120px;
+
+	background: #1a1b1e;
+	border-radius: 18px;
+
+	padding: 18px 20px 60px 20px;
+
+	box-sizing: border-box;
+
+	border: none;
+	outline: none;
+	resize: none;
+
+	color: #b8b8b8;
+
+	font-size: 22px;
+	line-height: 1.6;
+
+	overflow: hidden;
+
+	white-space: pre-wrap;
+	word-wrap: break-word;
+
+	display: block;
+
+	/* 💥 КЛЮЧЕВОЕ */
+	field-sizing: content;
+}
+
+/* ===== MOBILE ===== */
+
+@media (max-width: 600px) {
+	.feed {
+		max-width: 100%;
+		padding: 20px 10px;
+	}
+
+	.text {
+		font-size: 24px;
+		line-height: 1.75;
+	}
+}

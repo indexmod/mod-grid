@@ -1,0 +1,107 @@
+body{
+  margin:0;
+  background:#111214;
+  color:#e6e6e6;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* панель */
+.panel{
+  display:flex;
+  flex-direction:column;
+  gap:20px;
+
+  padding:40px;
+  max-width:600px;
+  margin:0 auto;
+}
+
+/* блоки */
+.panel > *{
+  background:#1a1b1e;
+  border-radius:14px;
+  padding:14px;
+  box-sizing:border-box;
+}
+
+/* input */
+input, textarea{
+  width:100%;
+  border:none;
+  outline:none;
+  resize:none;
+
+  background:transparent;
+  color:#b8b8b8;
+
+  font-size:16px;
+  font-family:inherit;
+}
+
+textarea{
+  height:140px;
+}
+
+/* focus */
+input:focus, textarea:focus{
+  box-shadow:0 0 0 1px #666 inset;
+}
+
+/* кнопки */
+button{
+  padding:12px;
+  border:none;
+  border-radius:14px;
+
+  background:#2a2b2f;
+  color:#e6e6e6;
+
+  cursor:pointer;
+}
+
+button:hover{
+  background:#34353a;
+}
+
+/* last post */
+#lastPost{
+  max-width:600px;
+  margin:0 auto;
+}
+
+/* список */
+#adminList{
+  max-width:600px;
+  margin:20px auto;
+
+  display:flex;
+  flex-direction:column;
+  gap:20px;
+}
+
+/* карточка */
+.adminItem{
+  background:#1a1b1e;
+  border-radius:14px;
+  padding:12px;
+
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+
+.adminItem img{
+  width:80px;
+  height:80px;
+  object-fit:cover;
+  border-radius:10px;
+}
+
+/* кнопка перехода */
+.endlessBtn{
+  text-align:center;
+  display:block;
+  margin:20px auto;
+
+  width:200px;
+}
