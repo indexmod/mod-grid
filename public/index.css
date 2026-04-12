@@ -67,6 +67,29 @@ textarea {
   display: block;
 }
 
+#addBtn {
+  background: #15161a;        /* как card */
+  color: #cfcfcf;
+
+  border: 1px solid #23252b;  /* как card border */
+  border-radius: 14px;        /* те же скругления */
+
+  padding: 8px 12px;
+
+  font-family: inherit;
+  font-size: 14px;
+
+  cursor: pointer;
+
+  transition: none; /* убираем дергания */
+}
+
+/* hover — только цвет рамки */
+#addBtn:hover {
+  border-color: #9b5cff;
+  color: #9b5cff;
+}
+
 /* CLEAR FLOAT */
 .card::after {
   content: "";
