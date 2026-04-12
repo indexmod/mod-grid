@@ -4,9 +4,11 @@ const addBtn = document.getElementById("addBtn");
 let posts = [];
 let textareas = {};
 let timers = {};
+let isSyncing = false;
 
 // ================= AUTO HEIGHT =================
 function autoResize(el) {
+  if (!el) return;
   el.style.height = "auto";
   el.style.height = el.scrollHeight + "px";
 }
@@ -20,27 +22,38 @@ async function load() {
   render();
 }
 
-// ================= SYNC =================
+// ================= SYNC (diff-safe) =================
 async function sync() {
-  const res = await fetch("/api/feed");
-  const json = await res.json();
+  if (isSyncing) return;
 
-  const server = json.data || [];
+  try {
+    isSyncing = true;
 
-  server.forEach(sp => {
-    const local = posts.find(p => p.id === sp.id);
-    if (!local) return;
+    const res = await fetch("/api/feed");
+    const json = await res.json();
 
-    if (!timers[sp.id] && local.text !== sp.text) {
-      local.text = sp.text;
+    const server = json.data || [];
 
-      const ta = textareas[sp.id];
-      if (ta) {
-        ta.value = sp.text;
-        autoResize(ta);
+    server.forEach(sp => {
+      const local = posts.find(p => p.id === sp.id);
+      if (!local) return;
+
+      if (!timers[sp.id] && local.text !== sp.text) {
+        local.text = sp.text;
+
+        const ta = textareas[sp.id];
+        if (ta && document.activeElement !== ta) {
+          ta.value = sp.text;
+          autoResize(ta);
+        }
       }
-    }
-  });
+    });
+
+  } catch (e) {
+    console.error("sync error", e);
+  } finally {
+    isSyncing = false;
+  }
 }
 
 // ================= CREATE =================
@@ -55,9 +68,21 @@ async function createPost() {
   });
 
   const json = await res.json();
-  posts.unshift(json.post);
 
+  posts.unshift(json.post);
   render();
+}
+
+// ================= UPDATE =================
+async function updatePost(id, patch) {
+  await fetch("/api/update", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      id,
+      ...patch
+    })
+  });
 }
 
 // ================= RENDER =================
@@ -69,10 +94,17 @@ function render() {
     const card = document.createElement("div");
     card.className = "card";
 
-    const img = document.createElement("img");
-    img.src = post.image || "";
+    // IMAGE
+    if (post.image) {
+      const img = document.createElement("img");
+      img.src = post.image;
+      img.className = "thumb";
+      card.appendChild(img);
+    }
 
+    // TEXT
     const text = document.createElement("textarea");
+    text.className = "text";
     text.value = post.text || "";
 
     autoResize(text);
@@ -88,21 +120,12 @@ function render() {
 
       clearTimeout(timers[post.id]);
 
-      timers[post.id] = setTimeout(async () => {
-        await fetch("/api/update", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: post.id,
-            text: value
-          })
-        });
-
+      timers[post.id] = setTimeout(() => {
+        updatePost(post.id, { text: value });
         delete timers[post.id];
       }, 300);
     });
 
-    card.appendChild(img);
     card.appendChild(text);
     grid.appendChild(card);
   });

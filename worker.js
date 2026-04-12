@@ -6,22 +6,21 @@ export default {
     // KV GUARD
     // ======================
     if (!env.GRID) {
-      return new Response(
-        JSON.stringify({ error: "GRID KV NOT BOUND" }),
-        {
-          status: 500,
-          headers: { "content-type": "application/json" }
-        }
+      return Response.json(
+        { error: "GRID KV NOT BOUND" },
+        { status: 500 }
       );
     }
 
     // ======================
-    // KV LAYER
+    // HELPERS
     // ======================
     const getFeed = async () => {
       try {
         const raw = await env.GRID.get("feed");
-        return raw ? JSON.parse(raw) : [];
+        const data = raw ? JSON.parse(raw) : [];
+
+        return Array.isArray(data) ? data : [];
       } catch (e) {
         console.log("GET ERROR:", e);
         return [];
@@ -30,19 +29,30 @@ export default {
 
     const saveFeed = async (feed) => {
       try {
-        await env.GRID.put("feed", JSON.stringify(feed.slice(0, 200)));
+        await env.GRID.put(
+          "feed",
+          JSON.stringify(feed.slice(0, 200))
+        );
       } catch (e) {
         console.log("SAVE ERROR:", e);
       }
+    };
+
+    const sortFeed = (feed) => {
+      return feed.sort(
+        (a, b) => (a.order ?? 0) - (b.order ?? 0)
+      );
     };
 
     // ======================
     // API: FEED
     // ======================
     if (url.pathname === "/api/feed") {
+      const feed = await getFeed();
+
       return Response.json({
         ok: true,
-        data: await getFeed()
+        data: sortFeed(feed)
       });
     }
 
@@ -55,8 +65,12 @@ export default {
 
       const post = {
         id: Date.now(),
+
+        text: body.text || "",
         image: body.image || "",
-        text: body.text || ""
+        link: body.link || "",
+
+        order: feed.length
       };
 
       feed.unshift(post);
@@ -76,11 +90,17 @@ export default {
       const body = await req.json();
       let feed = await getFeed();
 
-      feed = feed.map((p) =>
-        p.id === body.id
-          ? { ...p, text: body.text }
-          : p
-      );
+      feed = feed.map((p) => {
+        if (p.id !== body.id) return p;
+
+        return {
+          ...p,
+          text: body.text ?? p.text,
+          image: body.image ?? p.image,
+          link: body.link ?? p.link,
+          order: body.order ?? p.order
+        };
+      });
 
       await saveFeed(feed);
 
@@ -102,16 +122,42 @@ export default {
     }
 
     // ======================
+    // BULK REORDER (drag & drop)
+    // ======================
+    if (url.pathname === "/api/reorder") {
+      const body = await req.json();
+      // body = [{id, order}]
+
+      let feed = await getFeed();
+
+      const map = new Map(
+        body.map((p) => [p.id, p.order])
+      );
+
+      feed = feed.map((p) => ({
+        ...p,
+        order: map.get(p.id) ?? p.order
+      }));
+
+      await saveFeed(feed);
+
+      return Response.json({ ok: true });
+    }
+
+    // ======================
     // ADMIN ROUTE
     // ======================
     if (url.pathname === "/admin") {
       return env.ASSETS.fetch(
-        new Request(new URL("/admin.html", req.url), req)
+        new Request(
+          new URL("/admin.html", req.url),
+          req
+        )
       );
     }
 
     // ======================
-    // STATIC FILES
+    // STATIC
     // ======================
     return env.ASSETS.fetch(req);
   }

@@ -2,64 +2,120 @@ body {
   margin: 0;
   background: #111214;
   color: #e6e6e6;
+
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  overflow-x: hidden;
 }
 
-/* TOPBAR */
+/* ================= TOPBAR ================= */
+
 #topbar {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  padding: 12px;
+
+  padding: 12px 16px;
   background: #111214;
+
   z-index: 10;
+
   border-bottom: 1px solid #222;
+
+  display: flex;
+  gap: 10px;
 }
 
 #addBtn {
   background: #1a1b1e;
-  color: #fff;
+  color: #b8b8b8;
+
   border: 1px solid #333;
+
   padding: 8px 12px;
+  border-radius: 10px;
+
   cursor: pointer;
 }
 
-/* GRID */
-#grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 20px;
-  padding: 70px 20px 20px;
+#addBtn:hover {
+  border-color: #9b5cff;
+  color: #9b5cff;
 }
 
-/* CARD */
+/* ================= GRID ================= */
+
+#grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+
+  padding: 80px 20px 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ================= CARD ================= */
+
 .card {
   background: #1a1b1e;
+
   border-radius: 16px;
   padding: 12px;
+
   display: flex;
   flex-direction: column;
   gap: 10px;
+
+  position: relative;
+
+  transition: transform 0.15s ease;
 }
 
-/* IMAGE */
+.card:hover {
+  transform: translateY(-2px);
+}
+
+/* ================= IMAGE ================= */
+
 .card img {
   width: 100%;
   border-radius: 12px;
   object-fit: cover;
+  display: block;
 }
 
-/* TEXT */
+/* ================= TEXTAREA ================= */
+
 textarea {
   width: 100%;
   min-height: 80px;
+
   background: transparent;
+
   border: none;
   outline: none;
+
   color: #b8b8b8;
+
   font-size: 14px;
   line-height: 1.5;
+
   resize: none;
   overflow: hidden;
+
+  font-family: inherit;
+}
+
+/* ================= FOCUS ================= */
+
+textarea:focus {
+  color: #e6e6e6;
+}
+
+/* ================= SCROLL OPT ================= */
+
+* {
+  box-sizing: border-box;
 }
