@@ -3,11 +3,11 @@ export default {
     const url = new URL(req.url);
 
     // ======================
-    // DB GUARD
+    // KV GUARD
     // ======================
-    if (!env.DB) {
+    if (!env.GRID) {
       return new Response(
-        JSON.stringify({ error: "DB NOT BOUND" }),
+        JSON.stringify({ error: "GRID KV NOT BOUND" }),
         {
           status: 500,
           headers: { "content-type": "application/json" }
@@ -16,22 +16,23 @@ export default {
     }
 
     // ======================
-    // DB LAYER
+    // KV LAYER
     // ======================
     const getFeed = async () => {
       try {
-        const raw = await env.DB.get("feed");
+        const raw = await env.GRID.get("feed");
         return raw ? JSON.parse(raw) : [];
       } catch (e) {
+        console.log("GET ERROR:", e);
         return [];
       }
     };
 
     const saveFeed = async (feed) => {
       try {
-        await env.DB.put("feed", JSON.stringify(feed.slice(0, 50)));
+        await env.GRID.put("feed", JSON.stringify(feed.slice(0, 200)));
       } catch (e) {
-        console.log("DB ERROR:", e);
+        console.log("SAVE ERROR:", e);
       }
     };
 
@@ -46,7 +47,7 @@ export default {
     }
 
     // ======================
-    // API: ADD
+    // API: CREATE POST
     // ======================
     if (url.pathname === "/api/paste") {
       const body = await req.json();
@@ -59,20 +60,26 @@ export default {
       };
 
       feed.unshift(post);
+
       await saveFeed(feed);
 
-      return Response.json({ ok: true, post });
+      return Response.json({
+        ok: true,
+        post
+      });
     }
 
     // ======================
-    // API: UPDATE
+    // API: UPDATE POST
     // ======================
     if (url.pathname === "/api/update") {
       const body = await req.json();
       let feed = await getFeed();
 
-      feed = feed.map(p =>
-        p.id === body.id ? { ...p, text: body.text } : p
+      feed = feed.map((p) =>
+        p.id === body.id
+          ? { ...p, text: body.text }
+          : p
       );
 
       await saveFeed(feed);
@@ -81,19 +88,22 @@ export default {
     }
 
     // ======================
-    // API: DELETE
+    // API: DELETE POST
     // ======================
     if (url.pathname === "/api/delete") {
       const body = await req.json();
       let feed = await getFeed();
 
-      feed = feed.filter(p => p.id !== body.id);
+      feed = feed.filter((p) => p.id !== body.id);
 
       await saveFeed(feed);
 
       return Response.json({ ok: true });
     }
 
+    // ======================
+    // ADMIN ROUTE
+    // ======================
     if (url.pathname === "/admin") {
       return env.ASSETS.fetch(
         new Request(new URL("/admin.html", req.url), req)
@@ -101,7 +111,7 @@ export default {
     }
 
     // ======================
-    // fallback static files
+    // STATIC FILES
     // ======================
     return env.ASSETS.fetch(req);
   }

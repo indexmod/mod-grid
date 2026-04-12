@@ -10,8 +10,8 @@
 
   "kv_namespaces": [
     {
-      "binding": "DB",
-      "id": "e97a6ea650144667aeeb55e318c2e6af"
+      "binding": "GRID",
+      "id": "48f85de76d83424c83ddec1722381734"
     }
   ]
 }
