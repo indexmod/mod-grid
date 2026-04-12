@@ -38,13 +38,13 @@ body {
 .card img {
   width: 100%;
   height: auto;
-
   display: block;
 
   border-radius: 12px;
+  object-fit: contain;
 
-  object-fit: contain;   /* ключевой фикс */
-  background: #0f1013;   /* плейсхолдер под пустоты */
+  background: #15161a;
+  padding: 4px;
 }
 /* TEXT */
 textarea {
