@@ -29,22 +29,27 @@ body {
 /* CARD */
 .card {
   background: #15161a;
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid #23252b;
   border-radius: 14px;
+
   padding: 10px;
-  min-height: 120px;
+  display: block;
 }
 
+/* ОБЛАСТЬ КАРТИНКИ = 1/4 карточки */
 .card img {
   width: 100%;
-  height: auto;
+  max-height: 90px;     /* ограничение высоты */
+  height: 90px;         /* фикс зона миниатюры */
+
+  object-fit: contain;  /* без кропа */
+  object-position: left top;
+
+  background: #0f1013;
+  border-radius: 10px;
+
   display: block;
-
-  border-radius: 12px;
-  object-fit: contain;
-
-  background: #15161a;
-  padding: 4px;
+  margin-bottom: 8px;
 }
 /* TEXT */
 textarea {
