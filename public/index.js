@@ -20,7 +20,7 @@ async function load() {
   render();
 }
 
-// ================= SYNC (без перерендера DOM) =================
+// ================= SYNC =================
 async function sync() {
   const res = await fetch("/api/feed");
   const json = await res.json();
@@ -37,26 +37,34 @@ async function sync() {
     // TEXT sync
     if (!timers[sp.id] && local.text !== sp.text) {
       local.text = sp.text;
+
       const ta = card.querySelector("textarea");
       if (ta) {
-        ta.value = sp.text;
+        ta.value = sp.text || "";
         autoResize(ta);
       }
     }
 
-    // IMAGE sync (ВАЖНО: не затираем пустым значением)
-    if (sp.image && local.image !== sp.image) {
+    // IMAGE sync (важно: всегда перезапись state)
+    if (sp.image !== undefined && local.image !== sp.image) {
       local.image = sp.image;
+
       const img = card.querySelector("img");
+
       if (img) {
-        img.src = sp.image;
-        img.style.display = "block";
+        if (sp.image) {
+          img.src = sp.image;
+          img.style.display = "block";
+        } else {
+          img.removeAttribute("src");
+          img.style.display = "none";
+        }
       }
     }
   });
 }
 
-// ================= CREATE POST =================
+// ================= CREATE =================
 async function createPost() {
   const res = await fetch("/api/paste", {
     method: "POST",
@@ -78,28 +86,28 @@ async function createPost() {
 function createCard(post) {
   const card = document.createElement("div");
   card.className = "card";
-  card.draggable = true;
 
-  // IMAGE
+  // ===== IMAGE =====
   const img = document.createElement("img");
 
-  if (post.image?.trim()) {
+  if (post.image && post.image.trim()) {
     img.src = post.image;
+    img.style.display = "block";
   } else {
     img.removeAttribute("src");
+    img.style.display = "none"; // 🔥 убираем белый плейсхолдер
   }
 
   img.onerror = () => {
     img.style.display = "none";
   };
 
-  // TEXT
+  // ===== TEXT =====
   const ta = document.createElement("textarea");
   ta.value = post.text || "";
 
   autoResize(ta);
 
-  // TEXT UPDATE
   ta.addEventListener("input", () => {
     post.text = ta.value;
     autoResize(ta);
@@ -120,14 +128,14 @@ function createCard(post) {
     }, 300);
   });
 
-  // IMAGE PASTE (фикс: СРАЗУ сохраняем в KV)
+  // ===== IMAGE PASTE =====
   ta.addEventListener("paste", async (e) => {
     const text = (e.clipboardData || window.clipboardData)
       .getData("text");
 
     if (
       text.startsWith("http") &&
-      text.match(/\.(jpg|jpeg|png|webp)/)
+      text.match(/\.(jpg|jpeg|png|webp)/i)
     ) {
       e.preventDefault();
 
@@ -146,18 +154,10 @@ function createCard(post) {
     }
   });
 
-  // DRAG
-  card.addEventListener("dragstart", () => {
-    card.classList.add("dragging");
-  });
-
-  card.addEventListener("dragend", () => {
-    card.classList.remove("dragging");
-    saveOrder();
-  });
-
   card.appendChild(img);
   card.appendChild(ta);
+
+  nodes[post.id] = card;
 
   return card;
 }
@@ -169,61 +169,7 @@ function render() {
 
   posts.forEach(post => {
     const card = createCard(post);
-    nodes[post.id] = card;
     grid.appendChild(card);
-  });
-}
-
-// ================= DRAG SORT =================
-grid.addEventListener("dragover", (e) => {
-  e.preventDefault();
-
-  const after = getAfterElement(grid, e.clientY);
-  const dragging = document.querySelector(".dragging");
-
-  if (!dragging) return;
-
-  if (!after) {
-    grid.appendChild(dragging);
-  } else {
-    grid.insertBefore(dragging, after);
-  }
-});
-
-function getAfterElement(container, y) {
-  const els = [...container.querySelectorAll(".card:not(.dragging)")];
-
-  return els.reduce((closest, child) => {
-    const box = child.getBoundingClientRect();
-    const offset = y - box.top - box.height / 2;
-
-    if (offset < 0 && offset > closest.offset) {
-      return { offset, element: child };
-    } else {
-      return closest;
-    }
-  }, { offset: Number.NEGATIVE_INFINITY }).element;
-}
-
-// ================= SAVE ORDER =================
-function saveOrder() {
-  const ordered = [...grid.children].map((el, index) => {
-    const post = posts.find(p => nodes[p.id] === el);
-    if (post) post.order = index;
-    return post;
-  });
-
-  posts = ordered;
-
-  fetch("/api/reorder", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(
-      posts.map(p => ({
-        id: p.id,
-        order: p.order
-      }))
-    )
   });
 }
 
