@@ -4,120 +4,80 @@ body {
   color: #e6e6e6;
 
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-
-  overflow-x: hidden;
-  box-sizing: border-box;
 }
 
-/* ================= TOPBAR ================= */
-
-#topbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-
-  padding: 12px 16px;
-  background: #111214;
-
-  z-index: 10;
-
-  border-bottom: 1px solid #222;
-
-  display: flex;
-  gap: 10px;
-}
-
-#addBtn {
-  background: #1a1b1e;
-  color: #b8b8b8;
-
-  border: 1px solid #333;
-
-  padding: 8px 12px;
-  border-radius: 10px;
-
-  cursor: pointer;
-}
-
-#addBtn:hover {
-  border-color: #9b5cff;
-  color: #9b5cff;
-}
-
-/* ================= GRID (FIXED) ================= */
+/* ================= GRID ================= */
 
 #grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  padding: 80px 20px 20px;
-  max-width: 1400px;
-  margin: 0 auto;
+  gap: 14px;
+
+  padding: 80px 14px 14px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* ================= CARD ================= */
 
 .card {
-  position: relative;
-  padding: 12px;
+  background: #15161a;              /* чуть светлее фон */
+  border: 1px solid #23252b;        /* едва заметная рамка */
+  border-radius: 14px;
+
+  padding: 10px;
+
   display: block;
+  min-height: 120px;
+
+  box-sizing: border-box;
 }
 
-.card {
-  transition: none !important;
-}
-
-.card:hover {
-  transform: none !important;
-}
-
-/* ================= IMAGE ================= */
-
-.card {
-  width: 260px;
-  max-width: 260px;
-}
+/* ================= IMAGE (float layout) ================= */
 
 .card img {
   float: left;
-  width: 25%;
-  max-width: 80px;
 
-  margin: 0 12px 8px 0;
+  width: 26%;
+  max-width: 90px;
+
+  margin: 0 10px 6px 0;
 
   border-radius: 10px;
-  object-fit: cover;
 
+  object-fit: cover;
   display: block;
 }
 
-/* ================= TEXTAREA ================= */
+/* ================= TEXT ================= */
 
 textarea {
   width: 100%;
-  min-height: 80px;
 
   background: transparent;
   border: none;
   outline: none;
 
-  color: #b8b8b8;
+  color: #cfcfcf;
 
   font-size: 14px;
   line-height: 1.5;
 
   resize: none;
   overflow: hidden;
+
+  font-family: inherit;
 }
 
+/* ================= CLEAR FLOAT SAFETY ================= */
 
-
-/* ================= GLOBAL ================= */
-
-* {
-  box-sizing: border-box;
+.card::after {
+  content: "";
+  display: block;
+  clear: both;
 }
+
+/* ================= RESPONSIVE ================= */
 
 @media (max-width: 1200px) {
   #grid { grid-template-columns: repeat(3, 1fr); }
