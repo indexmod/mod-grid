@@ -47,9 +47,24 @@ body {
 
 /* TEXT */
 textarea {
-  color: #ffffff !important;
-  background: red !important;
-  min-height: 80px !important;
+  width: 100%;
+  min-height: 60px;
+
+  background: transparent;
+
+  border: none;
+  outline: none;
+
+  color: #d6d6d6; /* ВАЖНО */
+  caret-color: #ffffff;
+
+  font-size: 14px;
+  line-height: 1.5;
+
+  resize: none;
+  overflow: hidden;
+
+  display: block;
 }
 
 /* CLEAR FLOAT */
