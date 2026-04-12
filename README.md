@@ -169,9 +169,3 @@ GRID v2 roadmap:
 * drag reorder stable (no flicker)
 * R2 storage instead of KV
 * block-based cards (Notion style)
-
----
-
-Если хочешь — дальше я могу:
-👉 превратить это в **настоящую архитектуру “живой сетки” (grid OS)**
-👉 или добавить **inline embed систему как Notion + Twitter hybrid**
