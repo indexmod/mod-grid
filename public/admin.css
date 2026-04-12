@@ -1,10 +1,100 @@
-/* ================= GRID (ADMIN) ================= */
+/* ================= BASE ================= */
+
+body {
+  margin: 0;
+  background: #111214;
+  color: #e6e6e6;
+
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* ================= TOPBAR ================= */
+
+#topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+
+  padding: 12px 16px;
+
+  background: #111214;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+/* ================= GRID ================= */
 
 #grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
+
   padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ================= CARD ================= */
+
+.card {
+  background: #15161a;
+  border: 1px solid #23252b;
+  border-radius: 14px;
+
+  padding: 10px;
+
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+
+  min-height: 100px;
+}
+
+/* ================= IMAGE ================= */
+
+.card img {
+  width: 80px;
+  height: 80px;
+
+  object-fit: cover;
+  border-radius: 10px;
+
+  background: #0f1013;
+
+  flex-shrink: 0;
+
+  display: block;
+}
+
+/* скрываем пустые */
+.card img:not([src]),
+.card img[src=""] {
+  display: none;
+}
+
+/* ================= TEXT ================= */
+
+.card textarea {
+  flex: 1;
+
+  min-height: 80px;
+
+  background: transparent;
+  border: none;
+  outline: none;
+
+  color: #d6d6d6;
+  caret-color: #fff;
+
+  font-size: 14px;
+  line-height: 1.5;
+
+  resize: none;
+  overflow: hidden;
+
+  font-family: inherit;
+
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 /* ================= DELETE BUTTON ================= */
@@ -12,7 +102,7 @@
 .deleteBtn {
   margin-top: 8px;
 
-  background: #15161a;              /* как card */
+  background: #15161a;
   border: 1px solid #3a2323;
 
   color: #ff6b6b;
@@ -24,9 +114,25 @@
   font-family: inherit;
 
   cursor: pointer;
+
+  align-self: flex-start;
 }
 
 .deleteBtn:hover {
   border-color: #ff6b6b;
   color: #ff8c8c;
+}
+
+/* ================= RESPONSIVE ================= */
+
+@media (max-width: 1100px) {
+  #grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 800px) {
+  #grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 500px) {
+  #grid { grid-template-columns: 1fr; }
 }
