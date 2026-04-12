@@ -6,6 +6,7 @@ body {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 /* ================= TOPBAR ================= */
@@ -44,14 +45,20 @@ body {
   color: #9b5cff;
 }
 
-/* ================= GRID ================= */
+/* ================= GRID (FIXED) ================= */
 
 #grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+
+  /* 🔥 ВАЖНО: фиксированные плитки */
+  grid-template-columns: repeat(auto-fill, 260px);
+
+  justify-content: center; /* центрируем сетку */
+
   gap: 20px;
 
   padding: 80px 20px 20px;
+
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -59,6 +66,7 @@ body {
 /* ================= CARD ================= */
 
 .card {
+  width: 260px; /* 🔥 фиксируем ширину */
   background: #1a1b1e;
 
   border-radius: 16px;
@@ -67,8 +75,6 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
-
-  position: relative;
 
   transition: transform 0.15s ease;
 }
@@ -114,7 +120,7 @@ textarea:focus {
   color: #e6e6e6;
 }
 
-/* ================= SCROLL OPT ================= */
+/* ================= GLOBAL ================= */
 
 * {
   box-sizing: border-box;
