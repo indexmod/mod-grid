@@ -37,35 +37,41 @@ body {
 
   padding: 10px;
 
-  display: block;
-  height: auto;
-  overflow: visible;
+  display: flex;              /* 🔥 вместо float */
+  align-items: flex-start;
+  gap: 10px;
 
-  position: relative;
+  min-height: 100px;
 }
 
-/* ================= IMAGE (главный фикс) ================= */
+/* ================= IMAGE ================= */
 
 .card img {
-  float: left;
-
   width: 80px;
   height: 80px;
 
-  object-fit: contain;
-
+  object-fit: cover;          /* всегда заполняет */
   border-radius: 10px;
 
   background: #0f1013;
 
-  margin: 0 10px 6px 0;
+  flex-shrink: 0;
+
+  display: block;
 }
 
-/* ================= TEXTAREA ================= */
+/* скрываем если нет src */
+.card img:not([src]),
+.card img[src=""] {
+  display: none;
+}
+
+/* ================= TEXT ================= */
 
 .card textarea {
-  width: auto;
-  min-height: 60px;
+  flex: 1;
+
+  min-height: 80px;
 
   background: transparent;
   border: none;
@@ -80,18 +86,10 @@ body {
   resize: none;
   overflow: hidden;
 
-  display: block;
+  font-family: inherit;
 
   white-space: pre-wrap;
   word-break: break-word;
-}
-
-/* ================= CLEAR FLOAT ================= */
-
-.card::after {
-  content: "";
-  display: block;
-  clear: both;
 }
 
 /* ================= BUTTON ================= */
