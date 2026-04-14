@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Store — gallery</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f6f6f4;
+  color: #2a2a2a;
+
+  /* 🔥 e-ink / bitmap feel */
+  font-family:
+    "Chicago",
+    "Geneva",
+    "Courier New",
+    monospace;
+
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===== TOPBAR ===== */
+
+#topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+
+  padding: 10px 14px;
+
+  background: #f6f6f4;
+  border-bottom: 1px solid #d8d8d4;
+}
+
+/* ===== BUTTON ===== */
+
+#addBtn {
+  background: #ffffff;
+  border: 1px solid #cfcfc9;
+
+  padding: 6px 12px;
+
+  font-size: 13px;
+  cursor: pointer;
+
+  font-family: inherit;
+
+  image-rendering: pixelated;
+}
+
+#addBtn:hover {
+  background: #f0f0ec;
+}
+
+/* ===== GRID ===== */
+
+#grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+
+  gap: 12px;
+  padding: 16px;
+
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* ===== CARD ===== */
+
+.card {
+  background: #ffffff;
+  border: 1px solid #dcdcd6;
+
+  padding: 8px;
+
+  display: flex;
+  gap: 10px;
+
+  align-items: flex-start;
+
+  min-height: 90px;
+
+  transition: background 0.05s ease;
+}
+
+.card:focus-within {
+  background: #f0f0ec;
+}
+
+/* ===== IMAGE ===== */
+
+.card img {
+  width: 70px;
+  height: 70px;
+
+  object-fit: cover;
+
+  border: 1px solid #d0d0cb;
+
+  background: #ecece8;
+
+  flex-shrink: 0;
+
+  image-rendering: pixelated;
+}
+
+/* hide invalid */
+.card img:not([src]),
+.card img[src=""],
+.card img.error-img {
+  display: none;
+}
+
+/* ===== TEXT ===== */
+
+.card textarea {
+  flex: 1;
+
+  background: transparent;
+  border: none;
+  outline: none;
+
+  font-size: 13px;
+  line-height: 1.5;
+
+  color: #333;
+
+  resize: none;
+  overflow: hidden;
+
+  font-family: inherit;
+
+  padding: 0;
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 1000px) {
+  #grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 700px) {
+  #grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 480px) {
+  #grid { grid-template-columns: 1fr; }
+}
+
+/* ===== SYNC FLASH ===== */
+
+@keyframes flash {
+  0% { background: #fff; }
+  50% { background: #eaeae6; }
+  100% { background: #fff; }
+}
+
+.sync-flash {
+  animation: flash 0.2s linear;
+}
+</style>
+</head>
+
+<body>
+
+<div id="topbar">
+  <button id="addBtn">+ new</button>
+</div>
+
+<div id="grid"></div>
+
+<script>
+const grid = document.getElementById("grid");
+const addBtn = document.getElementById("addBtn");
+
+let posts = [];
+let nodes = {};
+let timers = {};
+
+function autoResize(el) {
+  el.style.height = "auto";
+  el.style.height = el.scrollHeight + "px";
+}
+
+function sanitizeImageUrl(url) {
+  if (!url) return null;
+  if (url.startsWith("http")) return url;
+  return null;
+}
+
+async function api(url, options = {}) {
+  try {
+    const res = await fetch(url, {
+      ...options,
+      headers: { "Content-Type": "application/json" }
+    });
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+async function load() {
+  const data = await api("/api/feed");
+  posts = data?.data || data || [];
+  render();
+}
+
+async function createPost() {
+  const res = await api("/api/paste", {
+    method: "POST",
+    body: JSON.stringify({ text: "", image: "" })
+  });
+
+  if (res?.post) {
+    posts.unshift(res.post);
+    render();
+  }
+}
+
+async function update(id, field, value) {
+  await api("/api/update", {
+    method: "POST",
+    body: JSON.stringify({ id, [field]: value })
+  });
+}
+
+function createCard(post) {
+  const card = document.createElement("div");
+  card.className = "card";
+
+  const img = document.createElement("img");
+
+  const valid = sanitizeImageUrl(post.image);
+  if (valid) {
+    img.src = valid;
+  } else {
+    img.style.display = "none";
+  }
+
+  const ta = document.createElement("textarea");
+  ta.value = post.text || "";
+
+  autoResize(ta);
+
+  ta.addEventListener("input", () => {
+    post.text = ta.value;
+    autoResize(ta);
+
+    clearTimeout(timers[post.id]);
+
+    timers[post.id] = setTimeout(async () => {
+      await update(post.id, "text", post.text);
+      delete timers[post.id];
+    }, 300);
+  });
+
+  ta.addEventListener("paste", async (e) => {
+    const text = e.clipboardData.getData("text");
+
+    if (/https?:\/\/.+\.(jpg|png|webp|gif)/i.test(text)) {
+      e.preventDefault();
+
+      post.image = text;
+      img.src = text;
+      img.style.display = "block";
+
+      await update(post.id, "image", text);
+    }
+  });
+
+  card.appendChild(img);
+  card.appendChild(ta);
+
+  nodes[post.id] = card;
+
+  return card;
+}
+
+function render() {
+  grid.innerHTML = "";
+  nodes = {};
+
+  for (const post of posts) {
+    grid.appendChild(createCard(post));
+  }
+}
+
+addBtn.onclick = createPost;
+
+load();
+</script>
+
+</body>
+</html>
