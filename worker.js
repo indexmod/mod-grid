@@ -26,7 +26,7 @@ export default {
       const raw = await env.GRID.get("feed");
       const feed = safeParse(raw);
 
-      // 🔥 MIGRATION LAYER (старые данные → новые)
+      // 🔥 MIGRATION LAYER
       return feed.map((p, i) => ({
         id: p.id ?? Date.now() + i,
 
@@ -78,7 +78,6 @@ export default {
         order: 0
       };
 
-      // shift order
       const updated = feed.map(p => ({
         ...p,
         order: (p.order ?? 0) + 1
@@ -95,7 +94,7 @@ export default {
     }
 
     // ======================
-    // UPDATE
+    // UPDATE (SAFE LEGACY)
     // ======================
     if (url.pathname === "/api/update") {
       const body = await req.json().catch(() => ({}));
@@ -106,10 +105,61 @@ export default {
 
         return {
           ...p,
+
+          // admin fields
           title: body.title ?? p.title,
           image: body.image ?? p.image,
-          comment: body.comment ?? p.comment,
+
+          // 🔒 comment только если явно передан
+          ...(Object.prototype.hasOwnProperty.call(body, "comment")
+            ? { comment: body.comment }
+            : {}),
+
           order: body.order ?? p.order
+        };
+      });
+
+      await saveFeed(updated);
+
+      return Response.json({ ok: true });
+    }
+
+    // ======================
+    // UPDATE META (ADMIN ONLY)
+    // ======================
+    if (url.pathname === "/api/update-meta") {
+      const body = await req.json().catch(() => ({}));
+      const feed = await getFeed();
+
+      const updated = feed.map(p => {
+        if (p.id !== body.id) return p;
+
+        return {
+          ...p,
+          title: body.title ?? p.title,
+          image: body.image ?? p.image
+          // ❌ comment НЕ ТРОГАЕМ
+        };
+      });
+
+      await saveFeed(updated);
+
+      return Response.json({ ok: true });
+    }
+
+    // ======================
+    // UPDATE COMMENT (INDEX ONLY)
+    // ======================
+    if (url.pathname === "/api/update-comment") {
+      const body = await req.json().catch(() => ({}));
+      const feed = await getFeed();
+
+      const updated = feed.map(p => {
+        if (p.id !== body.id) return p;
+
+        return {
+          ...p,
+          comment: body.comment ?? p.comment
         };
       });
 

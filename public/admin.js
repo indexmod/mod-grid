@@ -19,8 +19,8 @@ async function createPost() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       title: "",
-      image: "",
-      comment: ""
+      image: ""
+      // ❌ comment не создаём через админку
     })
   });
 
@@ -42,16 +42,16 @@ async function deletePost(id) {
   render();
 }
 
-// ================= UPDATE (manual push) =================
+// ================= UPDATE META (🔥 только title + image) =================
 async function pushUpdate(post) {
-  await fetch("/api/update", {
+  await fetch("/api/update-meta", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       id: post.id,
       title: post.title,
-      image: post.image,
-      comment: post.comment
+      image: post.image
+      // ❌ comment НЕ отправляем
     })
   });
 }
@@ -61,10 +61,12 @@ function createCard(post) {
   const card = document.createElement("div");
   card.className = "card";
 
-  // IMAGE
+  // IMAGE PREVIEW
   const img = document.createElement("img");
   if (post.image) {
     img.src = post.image;
+  } else {
+    img.style.display = "none";
   }
 
   // ================= LINK =================
@@ -77,23 +79,26 @@ function createCard(post) {
   title.placeholder = "заголовок";
   title.value = post.title || "";
 
-  // ================= COMMENT =================
+  // ================= COMMENT (READ-ONLY) =================
   const comment = document.createElement("textarea");
-  comment.placeholder = "комментарий";
+  comment.placeholder = "комментарий (редактируется в индексе)";
   comment.value = post.comment || "";
+  comment.disabled = true; // 🔒 блокируем
 
-  // ================= LOCAL STATE ONLY =================
+  // ================= LOCAL STATE =================
   link.oninput = () => {
     post.image = link.value.trim();
-    img.src = post.image;
+
+    if (post.image) {
+      img.src = post.image;
+      img.style.display = "block";
+    } else {
+      img.style.display = "none";
+    }
   };
 
   title.oninput = () => {
     post.title = title.value;
-  };
-
-  comment.oninput = () => {
-    post.comment = comment.value;
   };
 
   // ================= SEND =================
