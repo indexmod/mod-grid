@@ -28,6 +28,7 @@ body {
   margin: 0 auto;
 }
 
+
 /* ================= CARD ================= */
 
 .card {
@@ -37,11 +38,67 @@ body {
 
   padding: 10px;
 
-  display: flex;              /* 🔥 вместо float */
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  grid-template-rows: auto auto auto;
   gap: 10px;
 
-  min-height: 100px;
+  align-items: start;
+}
+
+/* ================= IMAGE ================= */
+
+.card img {
+  width: 80px;
+  height: 80px;
+
+  object-fit: cover;
+  border-radius: 10px;
+
+  background: #0f1013;
+
+  grid-column: 1;
+  grid-row: 1 / span 2;
+}
+
+/* ================= TITLE ================= */
+
+.title {
+  grid-column: 2;
+  grid-row: 1;
+
+  font-weight: bold;
+  line-height: 1.3;
+
+  align-self: start;
+}
+
+/* ================= COMMENT ================= */
+
+.card textarea {
+  grid-column: 1 / span 2;
+  grid-row: 3;
+
+  width: 100%;
+
+  background: transparent;
+  border: 1px dashed #444;
+  border-radius: 10px;
+  padding: 6px;
+
+  color: #d6d6d6;
+  caret-color: #fff;
+
+  font-size: 14px;
+  line-height: 1.5;
+
+  resize: none;
+  overflow: hidden;
+
+  font-family: inherit;
+
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 /* ================= IMAGE ================= */
