@@ -2,9 +2,6 @@ export default {
   async fetch(req, env) {
     const url = new URL(req.url);
 
-    // ======================
-    // GUARD
-    // ======================
     if (!env.GRID) {
       return Response.json(
         { error: "GRID KV NOT BOUND" },
@@ -15,6 +12,7 @@ export default {
     // ======================
     // HELPERS
     // ======================
+
     const safeParse = (raw) => {
       try {
         const data = raw ? JSON.parse(raw) : [];
@@ -25,37 +23,30 @@ export default {
     };
 
     const getFeed = async () => {
-      try {
-        const raw = await env.GRID.get("feed");
-        return safeParse(raw);
-      } catch (e) {
-        console.log("GET ERROR:", e);
-        return [];
-      }
+      const raw = await env.GRID.get("feed");
+      const feed = safeParse(raw);
+
+      // 🔥 MIGRATION LAYER (старые данные → новые)
+      return feed.map((p, i) => ({
+        id: p.id ?? Date.now() + i,
+
+        title: p.title ?? p.text ?? "",
+        image: p.image ?? "",
+        comment: p.comment ?? p.link ?? "",
+
+        order: Number.isFinite(p.order) ? p.order : i
+      }));
     };
 
     const saveFeed = async (feed) => {
-      try {
-        const clean = feed
-          .filter(Boolean)
-          .slice(0, 200);
+      const clean = feed
+        .filter(Boolean)
+        .slice(0, 200);
 
-        await env.GRID.put("feed", JSON.stringify(clean));
-      } catch (e) {
-        console.log("SAVE ERROR:", e);
-      }
+      await env.GRID.put("feed", JSON.stringify(clean));
     };
 
-    const normalize = (feed) =>
-      feed.map((p, i) => ({
-        id: p.id ?? Date.now() + i,
-        text: p.text ?? "",
-        image: p.image ?? "",
-        link: p.link ?? "",
-        order: Number.isFinite(p.order) ? p.order : i
-      }));
-
-    const sortByOrder = (feed) =>
+    const sortFeed = (feed) =>
       [...feed].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
     // ======================
@@ -64,11 +55,9 @@ export default {
     if (url.pathname === "/api/feed") {
       const feed = await getFeed();
 
-      const prepared = sortByOrder(normalize(feed));
-
       return Response.json({
         ok: true,
-        data: prepared
+        data: sortFeed(feed)
       });
     }
 
@@ -82,15 +71,15 @@ export default {
       const post = {
         id: Date.now(),
 
-        text: body.text || "",
+        title: body.title || "",
         image: body.image || "",
-        link: body.link || "",
+        comment: body.comment || "",
 
         order: 0
       };
 
-      // shift existing
-      const updated = feed.map((p) => ({
+      // shift order
+      const updated = feed.map(p => ({
         ...p,
         order: (p.order ?? 0) + 1
       }));
@@ -112,14 +101,14 @@ export default {
       const body = await req.json().catch(() => ({}));
       const feed = await getFeed();
 
-      const updated = feed.map((p) => {
+      const updated = feed.map(p => {
         if (p.id !== body.id) return p;
 
         return {
           ...p,
-          text: body.text ?? p.text,
+          title: body.title ?? p.title,
           image: body.image ?? p.image,
-          link: body.link ?? p.link,
+          comment: body.comment ?? p.comment,
           order: body.order ?? p.order
         };
       });
@@ -136,7 +125,7 @@ export default {
       const body = await req.json().catch(() => ({}));
       const feed = await getFeed();
 
-      const updated = feed.filter((p) => p.id !== body.id);
+      const updated = feed.filter(p => p.id !== body.id);
 
       await saveFeed(updated);
 
@@ -148,21 +137,20 @@ export default {
     // ======================
     if (url.pathname === "/api/reorder") {
       const body = await req.json().catch(() => []);
-      let feed = await getFeed();
+      const feed = await getFeed();
 
       if (!Array.isArray(body)) {
-        return Response.json({ ok: false, error: "bad payload" }, { status: 400 });
+        return Response.json(
+          { ok: false, error: "bad payload" },
+          { status: 400 }
+        );
       }
 
-      const orderMap = new Map(
-        body.map((p) => [p.id, p.order])
-      );
+      const map = new Map(body.map(p => [p.id, p.order]));
 
-      const updated = feed.map((p) => ({
+      const updated = feed.map(p => ({
         ...p,
-        order: orderMap.has(p.id)
-          ? orderMap.get(p.id)
-          : p.order
+        order: map.has(p.id) ? map.get(p.id) : p.order
       }));
 
       await saveFeed(updated);
