@@ -33,7 +33,7 @@ async function sync() {
     const card = nodes[sp.id];
     if (!card) return;
 
-    // TITLE (readonly)
+    // TITLE
     if (local.title !== sp.title) {
       local.title = sp.title;
       card.querySelector(".title").textContent = sp.title || "";
@@ -69,7 +69,7 @@ function createCard(post) {
   const card = document.createElement("div");
   card.className = "card";
 
-  // LEFT IMAGE
+  // IMAGE
   const img = document.createElement("img");
   if (post.image) img.src = post.image;
   else img.style.display = "none";
@@ -107,7 +107,7 @@ function createCard(post) {
     timers[post.id] = setTimeout(async () => {
       await fetch("/api/update", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
           id: post.id,
           comment: post.comment

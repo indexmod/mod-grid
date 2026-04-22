@@ -71,7 +71,7 @@ function createCard(post) {
     img.style.display = "none";
   }
 
-  // INPUT
+  // INPUT (title + image)
   const ta = document.createElement("textarea");
   ta.placeholder = "вставь ссылку + заголовок";
   ta.value = post.title || "";
@@ -89,22 +89,53 @@ function createCard(post) {
       img.style.display = "none";
     }
 
+    // 🔥 раздельные апдейты
     await fetch("/api/update", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(post)
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        id: post.id,
+        title: post.title
+      })
+    });
+
+    await fetch("/api/update", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        id: post.id,
+        image: post.image
+      })
     });
   };
 
-  // DELETE (🔥 теперь через класс)
+  // COMMENT (как в индексе)
+  const comment = document.createElement("textarea");
+  comment.placeholder = "комментарий";
+  comment.value = post.comment || "";
+
+  comment.oninput = async () => {
+    post.comment = comment.value;
+
+    await fetch("/api/update", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        id: post.id,
+        comment: post.comment
+      })
+    });
+  };
+
+  // DELETE
   const del = document.createElement("div");
   del.className = "delete";
   del.textContent = "удалить";
-
   del.onclick = () => deletePost(post.id);
 
   card.appendChild(img);
   card.appendChild(ta);
+  card.appendChild(comment);
   card.appendChild(del);
 
   return card;
