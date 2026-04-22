@@ -2,6 +2,7 @@ const grid = document.getElementById("grid");
 
 let nodes = {};
 let timers = {};
+let buffer = {}; // 🔥 локальные изменения
 
 // ================= AUTO HEIGHT =================
 function autoResize(el) {
@@ -14,9 +15,7 @@ async function load() {
   const res = await fetch("/api/feed");
   const json = await res.json();
 
-  const server = json.data || [];
-
-  render(server);
+  render(json.data || []);
 }
 
 // ================= SYNC =================
@@ -31,12 +30,10 @@ async function sync() {
     if (!card) return;
 
     // TITLE
-    const title = card.querySelector(".title");
-    title.textContent = sp.title || "";
+    card.querySelector(".title").textContent = sp.title || "";
 
     // IMAGE
     const img = card.querySelector("img");
-
     if (sp.image) {
       img.src = sp.image;
       img.style.display = "block";
@@ -44,16 +41,17 @@ async function sync() {
       img.style.display = "none";
     }
 
-    // COMMENT (не перебиваем если пользователь печатает)
-    if (!timers[sp.id]) {
-      const ta = card.querySelector("textarea");
+    const ta = card.querySelector("textarea");
+
+    // 🔥 НЕ ТРОГАЕМ если есть локальный буфер или фокус
+    if (buffer[sp.id]) return;
+    if (document.activeElement === ta) return;
+
+    if (ta.value !== sp.comment) {
       ta.value = sp.comment || "";
       autoResize(ta);
     }
   });
-
-  // 🔥 важный момент: DOM = server state
-  render(server, true);
 }
 
 // ================= CARD =================
@@ -63,12 +61,8 @@ function createCard(post) {
 
   // IMAGE
   const img = document.createElement("img");
-
-  if (post.image) {
-    img.src = post.image;
-  } else {
-    img.style.display = "none";
-  }
+  if (post.image) img.src = post.image;
+  else img.style.display = "none";
 
   // TITLE
   const title = document.createElement("div");
@@ -79,7 +73,10 @@ function createCard(post) {
 
   // COMMENT
   const ta = document.createElement("textarea");
-  ta.value = post.comment || "";
+
+  // 🔥 восстановление draft
+  const saved = localStorage.getItem("draft_" + post.id);
+  ta.value = saved !== null ? saved : (post.comment || "");
 
   ta.style.marginTop = "8px";
   ta.style.border = "1px dashed #444";
@@ -89,23 +86,33 @@ function createCard(post) {
   autoResize(ta);
 
   ta.addEventListener("input", () => {
-    post.comment = ta.value;
-    autoResize(ta);
+    const value = ta.value;
+
+    // ⚡ мгновенно
+    buffer[post.id] = value;
+
+    // 💾 backup
+    localStorage.setItem("draft_" + post.id, value);
+
+    requestAnimationFrame(() => autoResize(ta));
 
     clearTimeout(timers[post.id]);
 
+    // 🌐 отложенная отправка
     timers[post.id] = setTimeout(async () => {
       await fetch("/api/update", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: post.id,
-          comment: post.comment
+          comment: value
         })
       });
 
-      delete timers[post.id];
-    }, 300);
+      delete buffer[post.id];
+      localStorage.removeItem("draft_" + post.id);
+
+    }, 1200);
   });
 
   card.appendChild(img);
@@ -118,7 +125,7 @@ function createCard(post) {
 }
 
 // ================= RENDER =================
-function render(serverPosts = [], force = false) {
+function render(serverPosts = []) {
   grid.innerHTML = "";
   nodes = {};
 
