@@ -1,6 +1,5 @@
 const grid = document.getElementById("grid");
 
-let posts = [];
 let nodes = {};
 let timers = {};
 
@@ -15,8 +14,9 @@ async function load() {
   const res = await fetch("/api/feed");
   const json = await res.json();
 
-  posts = json.data || [];
-  render();
+  const server = json.data || [];
+
+  render(server);
 }
 
 // ================= SYNC =================
@@ -27,41 +27,33 @@ async function sync() {
   const server = json.data || [];
 
   server.forEach(sp => {
-    const local = posts.find(p => p.id === sp.id);
-    if (!local) return;
-
     const card = nodes[sp.id];
     if (!card) return;
 
     // TITLE
-    if (local.title !== sp.title) {
-      local.title = sp.title;
-      card.querySelector(".title").textContent = sp.title || "";
-    }
+    const title = card.querySelector(".title");
+    title.textContent = sp.title || "";
 
     // IMAGE
-    if (local.image !== sp.image) {
-      local.image = sp.image;
+    const img = card.querySelector("img");
 
-      const img = card.querySelector("img");
-
-      if (sp.image) {
-        img.src = sp.image;
-        img.style.display = "block";
-      } else {
-        img.style.display = "none";
-      }
+    if (sp.image) {
+      img.src = sp.image;
+      img.style.display = "block";
+    } else {
+      img.style.display = "none";
     }
 
-    // COMMENT
-    if (!timers[sp.id] && local.comment !== sp.comment) {
-      local.comment = sp.comment;
-
+    // COMMENT (не перебиваем если пользователь печатает)
+    if (!timers[sp.id]) {
       const ta = card.querySelector("textarea");
       ta.value = sp.comment || "";
       autoResize(ta);
     }
   });
+
+  // 🔥 важный момент: DOM = server state
+  render(server, true);
 }
 
 // ================= CARD =================
@@ -71,14 +63,12 @@ function createCard(post) {
 
   // IMAGE
   const img = document.createElement("img");
-  if (post.image) img.src = post.image;
-  else img.style.display = "none";
 
-  // RIGHT BLOCK
-  const right = document.createElement("div");
-  right.style.flex = "1";
-  right.style.display = "flex";
-  right.style.flexDirection = "column";
+  if (post.image) {
+    img.src = post.image;
+  } else {
+    img.style.display = "none";
+  }
 
   // TITLE
   const title = document.createElement("div");
@@ -107,7 +97,7 @@ function createCard(post) {
     timers[post.id] = setTimeout(async () => {
       await fetch("/api/update", {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: post.id,
           comment: post.comment
@@ -118,11 +108,9 @@ function createCard(post) {
     }, 300);
   });
 
-  right.appendChild(title);
-  right.appendChild(ta);
-
   card.appendChild(img);
-  card.appendChild(right);
+  card.appendChild(title);
+  card.appendChild(ta);
 
   nodes[post.id] = card;
 
@@ -130,11 +118,11 @@ function createCard(post) {
 }
 
 // ================= RENDER =================
-function render() {
+function render(serverPosts = [], force = false) {
   grid.innerHTML = "";
   nodes = {};
 
-  posts.forEach(post => {
+  serverPosts.forEach(post => {
     grid.appendChild(createCard(post));
   });
 }
