@@ -33,13 +33,10 @@ async function sync() {
     const card = nodes[sp.id];
     if (!card) return;
 
-    // TEXT
-    if (!timers[sp.id] && local.text !== sp.text) {
-      local.text = sp.text;
-
-      const ta = card.querySelector("textarea");
-      ta.value = sp.text || "";
-      autoResize(ta);
+    // TITLE (readonly)
+    if (local.title !== sp.title) {
+      local.title = sp.title;
+      card.querySelector(".title").textContent = sp.title || "";
     }
 
     // IMAGE
@@ -52,17 +49,17 @@ async function sync() {
         img.src = sp.image;
         img.style.display = "block";
       } else {
-        img.removeAttribute("src");
         img.style.display = "none";
       }
     }
 
-    // TITLE
-    if (local.title !== sp.title) {
-      local.title = sp.title;
+    // COMMENT
+    if (!timers[sp.id] && local.comment !== sp.comment) {
+      local.comment = sp.comment;
 
-      const title = card.querySelector("h3");
-      title.textContent = sp.title || "";
+      const ta = card.querySelector("textarea");
+      ta.value = sp.comment || "";
+      autoResize(ta);
     }
   });
 }
@@ -72,29 +69,37 @@ function createCard(post) {
   const card = document.createElement("div");
   card.className = "card";
 
-  // IMAGE (readonly)
+  // LEFT IMAGE
   const img = document.createElement("img");
+  if (post.image) img.src = post.image;
+  else img.style.display = "none";
 
-  if (post.image) {
-    img.src = post.image;
-  } else {
-    img.style.display = "none";
-  }
+  // RIGHT BLOCK
+  const right = document.createElement("div");
+  right.style.flex = "1";
+  right.style.display = "flex";
+  right.style.flexDirection = "column";
 
-  img.onerror = () => img.style.display = "none";
-
-  // TITLE (readonly)
-  const title = document.createElement("h3");
+  // TITLE
+  const title = document.createElement("div");
+  title.className = "title";
   title.textContent = post.title || "";
+  title.style.fontWeight = "bold";
+  title.style.minHeight = "80px";
 
-  // TEXT (editable)
+  // COMMENT
   const ta = document.createElement("textarea");
-  ta.value = post.text || "";
+  ta.value = post.comment || "";
+
+  ta.style.marginTop = "8px";
+  ta.style.border = "1px dashed #444";
+  ta.style.borderRadius = "10px";
+  ta.style.padding = "6px";
 
   autoResize(ta);
 
   ta.addEventListener("input", () => {
-    post.text = ta.value;
+    post.comment = ta.value;
     autoResize(ta);
 
     clearTimeout(timers[post.id]);
@@ -105,7 +110,7 @@ function createCard(post) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: post.id,
-          text: post.text
+          comment: post.comment
         })
       });
 
@@ -113,9 +118,11 @@ function createCard(post) {
     }, 300);
   });
 
+  right.appendChild(title);
+  right.appendChild(ta);
+
   card.appendChild(img);
-  card.appendChild(title);
-  card.appendChild(ta);
+  card.appendChild(right);
 
   nodes[post.id] = card;
 

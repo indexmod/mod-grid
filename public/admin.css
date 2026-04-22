@@ -6,19 +6,32 @@ body {
   color: #e6e6e6;
 
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 14px;
 }
 
 /* ================= TOPBAR ================= */
 
 #topbar {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-
-  padding: 12px 16px;
-
-  background: #111214;
+  padding: 10px 16px;
   border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+/* ================= ADD BUTTON ================= */
+
+#addBtn {
+  background: none;
+  border: none;
+  padding: 0;
+
+  color: #e6e6e6;
+  cursor: pointer;
+
+  font-family: inherit;
+  font-size: 14px;
+}
+
+#addBtn:hover {
+  text-decoration: underline;
 }
 
 /* ================= GRID ================= */
@@ -36,91 +49,69 @@ body {
 /* ================= CARD ================= */
 
 .card {
-  background: #15161a;
   border: 1px solid #23252b;
-  border-radius: 14px;
+  border-radius: 12px;
 
   padding: 10px;
 
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
+  flex-direction: column;
+  gap: 8px;
 
-  min-height: 100px;
+  background: transparent; /* 🔥 убрали "карточность" */
 }
 
 /* ================= IMAGE ================= */
 
 .card img {
-  width: 80px;
-  height: 80px;
+  width: 60px;
+  height: 60px;
 
   object-fit: cover;
-  border-radius: 10px;
+  border-radius: 6px;
 
   background: #0f1013;
-
-  flex-shrink: 0;
-
-  display: block;
 }
 
-/* скрываем пустые */
 .card img:not([src]),
 .card img[src=""] {
   display: none;
 }
 
-/* ================= TEXT ================= */
+/* ================= INPUT ================= */
 
 .card textarea {
-  flex: 1;
+  width: 100%;
 
-  min-height: 80px;
+  min-height: 60px;
 
   background: transparent;
   border: none;
   outline: none;
 
   color: #d6d6d6;
-  caret-color: #fff;
 
+  font-family: inherit;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.4;
 
   resize: none;
   overflow: hidden;
-
-  font-family: inherit;
 
   white-space: pre-wrap;
   word-break: break-word;
 }
 
-/* ================= DELETE BUTTON ================= */
+/* ================= DELETE ================= */
 
-.deleteBtn {
-  margin-top: 8px;
-
-  background: #15161a;
-  border: 1px solid #3a2323;
-
-  color: #ff6b6b;
-
-  padding: 6px 8px;
-  border-radius: 10px;
-
-  font-size: 12px;
-  font-family: inherit;
-
+.card .delete {
   cursor: pointer;
-
-  align-self: flex-start;
+  color: #ff6b6b;
+  font-size: 13px;
 }
 
-.deleteBtn:hover {
-  border-color: #ff6b6b;
-  color: #ff8c8c;
+.card .delete:hover {
+  text-decoration: underline;
 }
 
 /* ================= RESPONSIVE ================= */

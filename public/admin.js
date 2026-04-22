@@ -2,7 +2,6 @@ const grid = document.getElementById("grid");
 const addBtn = document.getElementById("addBtn");
 
 let posts = [];
-let nodes = {};
 
 // ================= LOAD =================
 async function load() {
@@ -19,9 +18,9 @@ async function createPost() {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      title: "Новый заголовок",
-      text: "",
-      image: ""
+      title: "",
+      image: "",
+      comment: ""
     })
   });
 
@@ -43,13 +42,19 @@ async function deletePost(id) {
   render();
 }
 
-// ================= UPDATE =================
-async function updatePost(post) {
-  await fetch("/api/update", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(post)
-  });
+// ================= PARSE =================
+function parseInput(value) {
+  const urlMatch = value.match(/https?:\/\/\S+/);
+
+  let image = "";
+  let title = value;
+
+  if (urlMatch) {
+    image = urlMatch[0];
+    title = value.replace(image, "").trim();
+  }
+
+  return { image, title };
 }
 
 // ================= CARD =================
@@ -57,42 +62,48 @@ function createCard(post) {
   const card = document.createElement("div");
   card.className = "card";
 
-  // IMAGE (editable)
-  const imgInput = document.createElement("input");
-  imgInput.placeholder = "image url";
-  imgInput.value = post.image || "";
+  // IMAGE PREVIEW
+  const img = document.createElement("img");
 
-  imgInput.onchange = () => {
-    post.image = imgInput.value;
-    updatePost(post);
-  };
+  if (post.image) {
+    img.src = post.image;
+  } else {
+    img.style.display = "none";
+  }
 
-  // TITLE (editable)
-  const titleInput = document.createElement("input");
-  titleInput.value = post.title || "";
-
-  titleInput.oninput = () => {
-    post.title = titleInput.value;
-    updatePost(post);
-  };
-
-  // TEXT
+  // INPUT
   const ta = document.createElement("textarea");
-  ta.value = post.text || "";
+  ta.placeholder = "вставь ссылку + заголовок";
+  ta.value = post.title || "";
 
-  ta.oninput = () => {
-    post.text = ta.value;
-    updatePost(post);
+  ta.oninput = async () => {
+    const { image, title } = parseInput(ta.value);
+
+    post.image = image;
+    post.title = title;
+
+    if (image) {
+      img.src = image;
+      img.style.display = "block";
+    } else {
+      img.style.display = "none";
+    }
+
+    await fetch("/api/update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(post)
+    });
   };
 
-  // DELETE
-  const del = document.createElement("button");
-  del.className = "deleteBtn";
-  del.textContent = "delete";
+  // DELETE (🔥 теперь через класс)
+  const del = document.createElement("div");
+  del.className = "delete";
+  del.textContent = "удалить";
+
   del.onclick = () => deletePost(post.id);
 
-  card.appendChild(imgInput);
-  card.appendChild(titleInput);
+  card.appendChild(img);
   card.appendChild(ta);
   card.appendChild(del);
 
@@ -102,17 +113,12 @@ function createCard(post) {
 // ================= RENDER =================
 function render() {
   grid.innerHTML = "";
-  nodes = {};
 
   posts.forEach(p => {
-    const card = createCard(p);
-    nodes[p.id] = card;
-    grid.appendChild(card);
+    grid.appendChild(createCard(p));
   });
 }
 
-// ================= EVENTS =================
-addBtn.onclick = createPost;
-
 // ================= INIT =================
+addBtn.onclick = createPost;
 load();
