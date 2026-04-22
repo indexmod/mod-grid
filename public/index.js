@@ -1,5 +1,4 @@
 const grid = document.getElementById("grid");
-const addBtn = document.getElementById("addBtn");
 
 let posts = [];
 let nodes = {};
@@ -34,52 +33,38 @@ async function sync() {
     const card = nodes[sp.id];
     if (!card) return;
 
-    // TEXT sync
+    // TEXT
     if (!timers[sp.id] && local.text !== sp.text) {
       local.text = sp.text;
 
       const ta = card.querySelector("textarea");
-      if (ta) {
-        ta.value = sp.text || "";
-        autoResize(ta);
-      }
+      ta.value = sp.text || "";
+      autoResize(ta);
     }
 
-    // IMAGE sync (важно: всегда перезапись state)
-    if (sp.image !== undefined && local.image !== sp.image) {
+    // IMAGE
+    if (local.image !== sp.image) {
       local.image = sp.image;
 
       const img = card.querySelector("img");
 
-      if (img) {
-        if (sp.image) {
-          img.src = sp.image;
-          img.style.display = "block";
-        } else {
-          img.removeAttribute("src");
-          img.style.display = "none";
-        }
+      if (sp.image) {
+        img.src = sp.image;
+        img.style.display = "block";
+      } else {
+        img.removeAttribute("src");
+        img.style.display = "none";
       }
     }
+
+    // TITLE
+    if (local.title !== sp.title) {
+      local.title = sp.title;
+
+      const title = card.querySelector("h3");
+      title.textContent = sp.title || "";
+    }
   });
-}
-
-// ================= CREATE =================
-async function createPost() {
-  const res = await fetch("/api/paste", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      text: "",
-      image: "",
-      link: ""
-    })
-  });
-
-  const json = await res.json();
-
-  posts.unshift(json.post);
-  render();
 }
 
 // ================= CARD =================
@@ -87,22 +72,22 @@ function createCard(post) {
   const card = document.createElement("div");
   card.className = "card";
 
-  // ===== IMAGE =====
+  // IMAGE (readonly)
   const img = document.createElement("img");
 
-  if (post.image && post.image.trim()) {
+  if (post.image) {
     img.src = post.image;
-    img.style.display = "block";
   } else {
-    img.removeAttribute("src");
-    img.style.display = "none"; // 🔥 убираем белый плейсхолдер
+    img.style.display = "none";
   }
 
-  img.onerror = () => {
-    img.style.display = "none";
-  };
+  img.onerror = () => img.style.display = "none";
 
-  // ===== TEXT =====
+  // TITLE (readonly)
+  const title = document.createElement("h3");
+  title.textContent = post.title || "";
+
+  // TEXT (editable)
   const ta = document.createElement("textarea");
   ta.value = post.text || "";
 
@@ -128,33 +113,8 @@ function createCard(post) {
     }, 300);
   });
 
-  // ===== IMAGE PASTE =====
-  ta.addEventListener("paste", async (e) => {
-    const text = (e.clipboardData || window.clipboardData)
-      .getData("text");
-
-    if (
-      text.startsWith("http") &&
-      text.match(/\.(jpg|jpeg|png|webp)/i)
-    ) {
-      e.preventDefault();
-
-      post.image = text;
-      img.src = text;
-      img.style.display = "block";
-
-      await fetch("/api/update", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: post.id,
-          image: text
-        })
-      });
-    }
-  });
-
   card.appendChild(img);
+  card.appendChild(title);
   card.appendChild(ta);
 
   nodes[post.id] = card;
@@ -168,13 +128,9 @@ function render() {
   nodes = {};
 
   posts.forEach(post => {
-    const card = createCard(post);
-    grid.appendChild(card);
+    grid.appendChild(createCard(post));
   });
 }
-
-// ================= EVENTS =================
-addBtn.onclick = createPost;
 
 // ================= INIT =================
 load();
