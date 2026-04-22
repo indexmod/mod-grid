@@ -42,19 +42,18 @@ async function deletePost(id) {
   render();
 }
 
-// ================= PARSE =================
-function parseInput(value) {
-  const urlMatch = value.match(/https?:\/\/\S+/);
-
-  let image = "";
-  let title = value;
-
-  if (urlMatch) {
-    image = urlMatch[0];
-    title = value.replace(image, "").trim();
-  }
-
-  return { image, title };
+// ================= UPDATE (manual push) =================
+async function pushUpdate(post) {
+  await fetch("/api/update", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      id: post.id,
+      title: post.title,
+      image: post.image,
+      comment: post.comment
+    })
+  });
 }
 
 // ================= CARD =================
@@ -62,81 +61,67 @@ function createCard(post) {
   const card = document.createElement("div");
   card.className = "card";
 
-  // IMAGE PREVIEW
+  // IMAGE
   const img = document.createElement("img");
-
   if (post.image) {
     img.src = post.image;
-  } else {
-    img.style.display = "none";
   }
 
-  // INPUT (title + image)
-  const ta = document.createElement("textarea");
-  ta.placeholder = "вставь ссылку + заголовок";
-  ta.value = post.title || "";
+  // ================= LINK =================
+  const link = document.createElement("textarea");
+  link.placeholder = "ссылка";
+  link.value = post.image || "";
 
-  ta.oninput = async () => {
-    const { image, title } = parseInput(ta.value);
+  // ================= TITLE =================
+  const title = document.createElement("textarea");
+  title.placeholder = "заголовок";
+  title.value = post.title || "";
 
-    post.image = image;
-    post.title = title;
-
-    if (image) {
-      img.src = image;
-      img.style.display = "block";
-    } else {
-      img.style.display = "none";
-    }
-
-    // 🔥 раздельные апдейты
-    await fetch("/api/update", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        id: post.id,
-        title: post.title
-      })
-    });
-
-    await fetch("/api/update", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        id: post.id,
-        image: post.image
-      })
-    });
-  };
-
-  // COMMENT (как в индексе)
+  // ================= COMMENT =================
   const comment = document.createElement("textarea");
   comment.placeholder = "комментарий";
   comment.value = post.comment || "";
 
-  comment.oninput = async () => {
-    post.comment = comment.value;
-
-    await fetch("/api/update", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        id: post.id,
-        comment: post.comment
-      })
-    });
+  // ================= LOCAL STATE ONLY =================
+  link.oninput = () => {
+    post.image = link.value.trim();
+    img.src = post.image;
   };
 
-  // DELETE
+  title.oninput = () => {
+    post.title = title.value;
+  };
+
+  comment.oninput = () => {
+    post.comment = comment.value;
+  };
+
+  // ================= SEND =================
+  const send = document.createElement("div");
+  send.className = "action-text";
+  send.textContent = "Отправить";
+
+  send.onclick = () => pushUpdate(post);
+
+  // ================= DELETE =================
   const del = document.createElement("div");
-  del.className = "delete";
-  del.textContent = "удалить";
+  del.className = "action-text delete-text";
+  del.textContent = "Удалить";
+
   del.onclick = () => deletePost(post.id);
 
+  // ================= ACTIONS =================
+  const actions = document.createElement("div");
+  actions.className = "actions";
+  actions.appendChild(send);
+  actions.appendChild(del);
+
+  // ================= BUILD =================
   card.appendChild(img);
-  card.appendChild(ta);
+  card.appendChild(link);
+  card.appendChild(title);
   card.appendChild(comment);
-  card.appendChild(del);
+  card.appendChild(actions);
 
   return card;
 }
@@ -144,10 +129,7 @@ function createCard(post) {
 // ================= RENDER =================
 function render() {
   grid.innerHTML = "";
-
-  posts.forEach(p => {
-    grid.appendChild(createCard(p));
-  });
+  posts.forEach(p => grid.appendChild(createCard(p)));
 }
 
 // ================= INIT =================

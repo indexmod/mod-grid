@@ -58,7 +58,7 @@ body {
   flex-direction: column;
   gap: 8px;
 
-  background: transparent; /* 🔥 убрали "карточность" */
+  background: transparent;
 }
 
 /* ================= IMAGE ================= */
@@ -78,12 +78,11 @@ body {
   display: none;
 }
 
-/* ================= INPUT ================= */
+/* ================= TEXTAREAS ================= */
 
 .card textarea {
   width: 100%;
-
-  min-height: 60px;
+  min-height: 22px;
 
   background: transparent;
   border: none;
@@ -102,16 +101,40 @@ body {
   word-break: break-word;
 }
 
-/* ================= DELETE ================= */
-
-.card .delete {
-  cursor: pointer;
-  color: #ff6b6b;
-  font-size: 13px;
+/* разные зоны чуть визуально разделим */
+.card textarea:nth-of-type(1) {
+  opacity: 0.9; /* link */
 }
 
-.card .delete:hover {
-  text-decoration: underline;
+.card textarea:nth-of-type(2) {
+  font-weight: 600; /* title */
+}
+
+.card textarea:nth-of-type(3) {
+  opacity: 0.75; /* comment */
+}
+
+/* ================= ACTIONS ================= */
+
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.action-text {
+  cursor: pointer;
+  font-size: 13px;
+  opacity: 0.6;
+  user-select: none;
+}
+
+.action-text:hover {
+  opacity: 1;
+}
+
+.delete-text {
+  color: #ff6b6b;
 }
 
 /* ================= RESPONSIVE ================= */
