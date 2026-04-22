@@ -1,4 +1,291 @@
+Публичная сетка: https://grid.indexmod.press/ — просмотр карточек и редактирование текста с автосохранением.
+Админка: https://grid.indexmod.press/admin — создание, редактирование (изображение, заголовок, текст) и удаление карточек.
 
+
+
+# 📦 GRID / INDEX SYSTEM
+
+Лёгкая KV-основанная система публикаций с двумя интерфейсами:
+
+* **Admin page** — редактирование контента
+* **Index page** — публичный живой поток
+* **Cloud Worker (Cloudflare KV)** — единый источник данных
+
+---
+
+# 🧠 Архитектура
+
+```
+Admin UI → /api/paste, /api/update, /api/delete
+Index UI → /api/feed (polling sync)
+Cloudflare Worker → KV storage (GRID.feed)
+```
+
+---
+
+# 📄 DATA MODEL
+
+Каждый пост хранится в KV как:
+
+```js
+{
+  id: Number,
+  title: String,
+  image: String,
+  comment: String,
+  order: Number
+}
+```
+
+---
+
+# 🧩 INDEX PAGE (PUBLIC VIEW)
+
+## 📍 Файл: index.html + index.js
+
+### Функции:
+
+#### 📥 Загрузка данных
+
+* Получает посты через:
+
+```
+GET /api/feed
+```
+
+#### 🔄 Live sync (каждые 2 секунды)
+
+* Подтягивает изменения с сервера
+* Обновляет DOM без перерендера всей страницы
+
+#### 🧱 Отображение поста
+
+* image (если есть)
+* title (заголовок)
+* comment (редактируемое поле)
+
+#### ✍️ Редактирование comment
+
+* debounce (300ms)
+* авто-отправка в API:
+
+```
+POST /api/update
+```
+
+---
+
+## ⚙️ Особенности индекса
+
+* Server is source of truth
+* DOM обновляется диффами
+* Нет локального состояния (кроме input debounce)
+* Safe sync без конфликтов состояния
+
+---
+
+# 🛠 ADMIN PAGE
+
+## 📍 Файл: admin.html + admin.js
+
+### Функции:
+
+#### ➕ Создание поста
+
+```
+POST /api/paste
+```
+
+Создаёт пустой пост:
+
+```js
+title: ""
+image: ""
+comment: ""
+```
+
+---
+
+#### ✏️ Редактирование
+
+Поля:
+
+* 📎 Ссылка (image URL)
+* 🧾 Заголовок
+* 💬 Комментарий
+
+Редактирование:
+
+* локально (без автосейва)
+* сохраняется вручную через:
+
+```
+"Отправить"
+→ POST /api/update
+```
+
+---
+
+#### 🗑 Удаление
+
+```
+POST /api/delete
+```
+
+Удаляет пост из KV
+
+---
+
+#### 📤 Отправка в облако
+
+Кнопка:
+
+```
+Отправить
+```
+
+Отправляет весь объект:
+
+```js
+{
+  id,
+  title,
+  image,
+  comment
+}
+```
+
+---
+
+# ⚙️ BACKEND (CLOUDFLARE WORKER)
+
+## 📍 endpoints
+
+---
+
+### 📥 GET FEED
+
+```
+GET /api/feed
+```
+
+Возвращает:
+
+```js
+{
+  ok: true,
+  data: [...]
+}
+```
+
+---
+
+### ➕ CREATE POST
+
+```
+POST /api/paste
+```
+
+Создаёт новый пост в KV.
+
+---
+
+### ✏️ UPDATE POST
+
+```
+POST /api/update
+```
+
+Обновляет поля:
+
+* title
+* image
+* comment
+
+---
+
+### 🗑 DELETE POST
+
+```
+POST /api/delete
+```
+
+Удаляет пост по id
+
+---
+
+### 🔁 REORDER
+
+```
+POST /api/reorder
+```
+
+Обновляет порядок элементов (order field)
+
+---
+
+# 🧠 DATA FLOW
+
+## Admin:
+
+```
+input → local state → manual push → KV
+```
+
+## Index:
+
+```
+KV → sync → DOM diff update
+```
+
+---
+
+# 🔄 SYNC STRATEGY (INDEX)
+
+* polling каждые 2s
+* server diff → DOM patch
+* textarea защищён debounce timer’ом
+* title/image обновляются мгновенно
+
+---
+
+# ⚠️ DESIGN PRINCIPLES
+
+### ✔ server is truth
+
+### ✔ no dual state conflicts
+
+### ✔ no uncontrolled autosave spam
+
+### ✔ minimal DOM re-rendering
+
+### ✔ KV as single persistence layer
+
+---
+
+# 🚀 FUTURE EXTENSIONS
+
+Система уже готова для:
+
+* realtime sync (WebSocket / Durable Objects)
+* offline-first editor
+* versioning posts
+* markdown support
+* history rollback
+* collaborative editing
+
+---
+
+# 🧩 SUMMARY
+
+Это не CMS и не блог.
+
+Это:
+
+> lightweight distributed content grid
+> with manual editorial control + live public projection
+
+Предыдущая версия
 
 # 📘 README — GRID (stable v1 rollback state)
 
