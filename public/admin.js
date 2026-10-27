@@ -14,20 +14,33 @@ async function load() {
 
 // ================= CREATE =================
 async function createPost() {
-  const res = await fetch("/api/paste", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      title: "",
-      image: ""
-      // ❌ comment не создаём через админку
-    })
-  });
+  if (addBtn.disabled) return;
 
-  const json = await res.json();
+  addBtn.disabled = true;
+  addBtn.textContent = "Добавляю…";
 
-  posts.unshift(json.post);
-  render();
+  try {
+    const res = await fetch("/api/paste", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "", image: "" })
+    });
+
+    const json = await res.json().catch(() => ({}));
+
+    if (!res.ok || !json.ok || !json.post) {
+      throw new Error(json.error || "Не удалось создать ячейку");
+    }
+
+    posts.unshift(json.post);
+    render();
+  } catch (error) {
+    console.error("Ошибка создания ячейки:", error);
+    alert(error.message || "Не удалось создать ячейку. Попробуйте ещё раз.");
+  } finally {
+    addBtn.disabled = false;
+    addBtn.textContent = "+ ячейка";
+  }
 }
 
 // ================= DELETE =================

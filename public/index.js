@@ -25,6 +25,17 @@ async function sync() {
 
   const server = json.data || [];
 
+  const serverIds = new Set(server.map(post => post.id));
+  const nodeIds = Object.keys(nodes).map(Number);
+  const hasNewPost = server.some(post => !nodes[post.id]);
+  const hasDeletedPost = nodeIds.some(id => !serverIds.has(id));
+
+  // Новые и удалённые карточки нельзя обновить точечно: создаём актуальную сетку.
+  if (hasNewPost || hasDeletedPost) {
+    render(server);
+    return;
+  }
+
   server.forEach(sp => {
     const card = nodes[sp.id];
     if (!card) return;
