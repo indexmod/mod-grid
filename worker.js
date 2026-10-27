@@ -43,7 +43,12 @@ export default {
         .filter(Boolean)
         .slice(0, 200);
 
-      await env.GRID.put("feed", JSON.stringify(clean));
+      try {
+        await env.GRID.put("feed", JSON.stringify(clean));
+      } catch (error) {
+        console.error("Не удалось записать ленту в KV", error);
+        throw new Error("Не удалось сохранить данные в хранилище");
+      }
     };
 
     const sortFeed = (feed) =>
@@ -65,32 +70,39 @@ export default {
     // CREATE
     // ======================
     if (url.pathname === "/api/paste") {
-      const body = await req.json().catch(() => ({}));
-      const feed = await getFeed();
+      try {
+        const body = await req.json().catch(() => ({}));
+        const feed = await getFeed();
 
-      const post = {
-        id: Date.now(),
+        const post = {
+          id: Date.now(),
 
-        title: body.title || "",
-        image: body.image || "",
-        comment: body.comment || "",
+          title: body.title || "",
+          image: body.image || "",
+          comment: body.comment || "",
 
-        order: 0
-      };
+          order: 0
+        };
 
-      const updated = feed.map(p => ({
-        ...p,
-        order: (p.order ?? 0) + 1
-      }));
+        const updated = feed.map(p => ({
+          ...p,
+          order: (p.order ?? 0) + 1
+        }));
 
-      updated.unshift(post);
+        updated.unshift(post);
 
-      await saveFeed(updated);
+        await saveFeed(updated);
 
-      return Response.json({
-        ok: true,
-        post
-      });
+        return Response.json({
+          ok: true,
+          post
+        });
+      } catch (error) {
+        return Response.json(
+          { ok: false, error: error.message || "Не удалось создать ячейку" },
+          { status: 500 }
+        );
+      }
     }
 
     // ======================
