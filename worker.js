@@ -43,11 +43,22 @@ export default {
         .filter(Boolean)
         .slice(0, 200);
 
-      try {
-        await env.GRID.put("feed", JSON.stringify(clean));
-      } catch (error) {
-        console.error("Не удалось записать ленту в KV", error);
-        throw new Error("Не удалось сохранить данные в хранилище");
+      const value = JSON.stringify(clean);
+
+      // KV допускает лишь одну запись в конкретный ключ в секунду.
+      // Повторяем попытку, когда создание ячейки совпало с автосохранением.
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          await env.GRID.put("feed", value);
+          return;
+        } catch (error) {
+          if (attempt === 2) {
+            console.error("Не удалось записать ленту в KV", error);
+            throw new Error("Не удалось сохранить данные в хранилище");
+          }
+
+          await new Promise(resolve => setTimeout(resolve, 1100 * (attempt + 1)));
+        }
       }
     };
 
